@@ -1,0 +1,6 @@
+# minute (0-59), hour (0-23, 0 = midnight), day (1-31), month (1-12), weekday (0-6, 0 = Sunday), command
+
+INGESTION_SCRIPT="python2.7 sec_ingestion.py"
+* * * * * $INGESTION_SCRIPT ingest
+0 * * * * $INGESTION_SCRIPT report_errors
+0 19 * * * $INGESTION_SCRIPT heartbeat
