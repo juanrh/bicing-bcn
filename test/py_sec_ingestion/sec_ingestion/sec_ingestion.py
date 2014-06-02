@@ -46,14 +46,19 @@ os.chdir(_script_dir)
 # Initialize log
 _logger = logging.getLogger(os.path.basename(__file__))
 _logger.setLevel(logging.DEBUG)
-# create file handler which logs even debug messages
+# create file handler for warnings of worse
 fh = logging.FileHandler(_log_file)
-fh.setLevel(logging.DEBUG)
+fh.setLevel(logging.WARNING)
+# a console handler logs everything
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
+ch.setFormatter(formatter)
 # add the handlers to _logger
 _logger.addHandler(fh)
+_logger.addHandler(ch)
 
 # Connect to S3A
 _aws_credentials = None
@@ -74,7 +79,7 @@ def store_file_to_s3(filename):
     '''
     trg_key = Key(_s3_bucket, filename)
     def report_progress(bytes_transmitted, bytes_total):
-        print bytes_transmitted, " / ", bytes_total, "bytes transmitted to S3"
+        _logger.info(str(bytes_transmitted) + " / " + str(bytes_total) + " bytes transmitted to S3")
     with open(os.path.join(_script_dir,filename), 'r') as in_f:
         trg_key.set_contents_from_file(in_f, replace = True, cb = report_progress, num_cb = 3)
 
@@ -214,7 +219,7 @@ def ingest_bicing_xml(times=3, period=1/3):
     bicing "times" with a "period" seconds between executions
     '''
     for _ in xrange(times):
-        print "ingesting"
+        _logger.info("ingesting")
         _do_ingest_bicing_xml()
         time.sleep(period)
 
@@ -241,7 +246,7 @@ def report_errors():
     # Must use os.stat because the log file is always created with zero size
     # by the logger
     if os.path.isfile(_log_file) and os.stat(_log_file).st_size > 0:
-        print "Errors found, sending email to admin"
+        _logger.info("Errors found, sending email to admin")
         _send_email(__file__, _admin_email,
                           "Bicing ingestion error report",
                           body = "Some errors occurred during ingestion, see attachment for details",
