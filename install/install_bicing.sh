@@ -5,6 +5,11 @@ source ${SCRIPT_DIR}/config.sh
 
 echo "Installing bicingbcn"
 pushd ${SCRIPT_DIR}
+
+echo "Downloading dependencies"
+sudo ./get_dependencies.sh
+echo "Done downloading dependencies"
+
 sudo rm -rf ${BICING_BASEDIR}
 sudo mkdir -p ${BICING_BASEDIR}
 sudo mkdir -p ${BICING_BASEDIR}/lib
