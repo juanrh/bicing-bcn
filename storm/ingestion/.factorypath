@@ -1,0 +1,6 @@
+<factorypath>
+    <factorypathentry kind="WKSPJAR" id="/storm-ingestion/annotations/autovalue/auto-service-1.0-rc1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="WKSPJAR" id="/storm-ingestion/annotations/autovalue/auto-value-1.0-rc1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="WKSPJAR" id="/storm-ingestion/annotations/autovalue/guava-17.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="WKSPJAR" id="/storm-ingestion/annotations/autovalue/jsr305-2.0.1.jar" enabled="true" runInBatchMode="false"/>
+</factorypath>
