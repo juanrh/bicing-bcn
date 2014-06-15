@@ -17,5 +17,11 @@ RET_CODE=$?
 report_start "Apache Kafka" ${RET_CODE}
 popd
 popd
+################
+# Redis
+################
+# FIXME depends on Centos installation, pretty standard anyway
+# This includes suitable stdout messages
+sudo service redis start
 ###################
 echo "Done starting bicingbcn"
