@@ -28,7 +28,7 @@ public class IngestionTopology {
 
 	
 	// FIXME: this configuration stuff should be moved to its own class
-	static final String DATASOURCE_CONF_KEY = IngestionTopology.class.getName() + "DATASOURCE_CONF_KEY";
+	public static final String DATASOURCE_CONF_KEY = IngestionTopology.class.getName() + "DATASOURCE_CONF_KEY";
 	/**
 	 * @param datasourcesPath Local path of the data sources directory. Should contain several properties
 	 * files with the configuration of each data source 
@@ -58,7 +58,7 @@ public class IngestionTopology {
 	 * 
 	 * @throws ConfigurationException if there is a problem parsing the configuration
 	 * */
-	static Configuration deserializeConfiguration(String serializedConfig) throws ConfigurationException {
+	public static Configuration deserializeConfiguration(String serializedConfig) throws ConfigurationException {
 		PropertiesConfiguration deserializedConfig = new PropertiesConfiguration();
 		deserializedConfig.load(new StringReader(serializedConfig));
 		return deserializedConfig;
@@ -118,6 +118,10 @@ public class IngestionTopology {
 		conf.put(DATASOURCE_CONF_KEY, datasourcesConfigurations);
 		System.out.println("Done loading configuration");
 		
+		// Clear Redis
+		// TODO: this is mostly for testing, but maybe should be permanent, think about it
+		RestIngestionSpout.clearDb(conf);
+		
 		// Build topology
 		System.out.println("Building topology");
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
@@ -128,7 +132,8 @@ public class IngestionTopology {
 		System.out.println("Launching topology");
 		if(topologyName != null && !topologyName.equals("")) {
 			// run in distributed mode
-			conf.setNumWorkers(3); // FIXME
+				// FIXME, but at least as many workers as data sources
+			conf.setNumWorkers(datasourcesConfigurations.size() * 2); 
 			try {
 				StormSubmitter.submitTopology(topologyName, conf, topologyBuilder.createTopology());
 			} catch (AlreadyAliveException e) {

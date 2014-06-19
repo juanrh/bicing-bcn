@@ -72,6 +72,11 @@
       		<version>1.0-rc1</version>
       		<scope>provided</scope>
     	</dependency>
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>2.5.1</version>
+		</dependency>
 		
 	</dependencies>
 	<build>
@@ -81,9 +86,34 @@
 			</resource>
 		</resources>
 		<plugins>
-			<!-- bind the maven-assembly-plugin to the package phase this will create 
-				a jar file without the storm dependencies suitable for deployment to a cluster. -->
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- TODO  delete comments after plugin change consolidation --> 
+			<!-- bind the maven-assembly-plugin to the package phase this will create 
+				a jar file without the storm dependencies suitable for deployment to a cluster. -->				
+			<!-- <plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<descriptorRefs>
@@ -132,15 +162,8 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.4</version>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
+			-->
+			
 		</plugins>
 		<pluginManagement>
 			<plugins>
