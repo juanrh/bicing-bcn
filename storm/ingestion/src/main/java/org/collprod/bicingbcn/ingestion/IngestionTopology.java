@@ -10,6 +10,8 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -26,7 +28,8 @@ public class IngestionTopology {
 	private static final String DEFAULT_INGESTION_PROPS="ingestion.properties";
 	private static final String DEFAULT_DATASOURCE_PATH = "datasources";
 
-	
+	private final static Logger LOGGER = LoggerFactory.getLogger(IngestionTopology.class);
+
 	// FIXME: this configuration stuff should be moved to its own class
 	public static final String DATASOURCE_CONF_KEY = IngestionTopology.class.getName() + "DATASOURCE_CONF_KEY";
 	/**
@@ -48,6 +51,10 @@ public class IngestionTopology {
 			PropertiesConfiguration datasourceConfig = new PropertiesConfiguration(datasourceConfigFile);
 			charWriter.reset();
 			datasourceConfig.save(charWriter);
+			if (configurations.containsKey(datasourceConfig.getString("datasource_id"))) {
+				throw new RuntimeException("Found duplicated configutation for datasource [" 
+							+ datasourceConfig.getString("datasource_id") + "]");
+			}
 			configurations.put(datasourceConfig.getString("datasource_id"), charWriter.toString());
 		}
 		return configurations;
@@ -100,12 +107,12 @@ public class IngestionTopology {
 		}
 		
 		// Load configuration
-		System.out.println("Loading configuration");
+		LOGGER.info("Loading configuration");
 		try{
 			ingestionConfig = new PropertiesConfiguration(new File(ingestionPropertiesPath));	
 			datasourcesConfigurations = loadDatasources(datasourcesPath);
 		} catch(ConfigurationException ce) {
-			System.err.println("There was an error loading configuration, program will stop: " + ce.getMessage());
+			LOGGER.error("There was an error loading configuration, program will stop: " + ce.getMessage());
 			ce.printStackTrace();
 			System.exit(1);
 		}
@@ -116,20 +123,20 @@ public class IngestionTopology {
 			conf.put(entry.getKey().toString(), entry.getValue());
 		}
 		conf.put(DATASOURCE_CONF_KEY, datasourcesConfigurations);
-		System.out.println("Done loading configuration");
+		LOGGER.info("Done loading configuration");
 		
 		// Clear Redis
 		// TODO: this is mostly for testing, but maybe should be permanent, think about it
 		RestIngestionSpout.clearDb(conf);
 		
 		// Build topology
-		System.out.println("Building topology");
+		LOGGER.info("Building topology");
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// create a Spout instance per data source
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), datasourcesConfigurations.size());
 	
 		// Launch topology
-		System.out.println("Launching topology");
+		LOGGER.info("Launching topology");
 		if(topologyName != null && !topologyName.equals("")) {
 			// run in distributed mode
 				// FIXME, but at least as many workers as data sources

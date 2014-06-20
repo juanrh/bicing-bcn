@@ -10,6 +10,7 @@
 	<name>storm-ingestion</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<version-slf4j>1.7.7</version-slf4j>		
 	</properties>
 	<repositories>
 		<repository>
@@ -77,6 +78,15 @@
 			<artifactId>jedis</artifactId>
 			<version>2.5.1</version>
 		</dependency>
+		
+		<!--  Causes a "SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation."
+		which finally leads to an error, because Storm already configures SLF4J => just take that from granted   
+		<dependency> 
+  			<groupId>org.slf4j</groupId>
+  			<artifactId>slf4j-log4j12</artifactId>
+  			<version>1.7.7</version>
+		</dependency>
+		-->
 		
 	</dependencies>
 	<build>
