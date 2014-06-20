@@ -31,11 +31,11 @@ import com.google.common.math.LongMath;
 /**
  * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
  * 
- * This spout has an inmutable configuration as a SourceRequestRefreshrate object per data source, and a
- * mutable state as the stopwatches and timestamps arrays. That mutable state could be persisted in some
- * store like e.g. Redis with RDB snapshots (as it's small and local to each spout instance), but that 
- * is not needed because if the state is lost and the spout restarted that only affects the first
- * call to nextTuple(), which maybe would download a file twice, but then the later calls would be ok
+ * The mutable state for this spout is stored as a DatasourceState object per data source
+ * assigned to this spout. The only mutable state is a Stopwatch object per data source.
+ * That mutable state could be persisted in some data store, but that is not needed because 
+ * if the state is lost and the spout restarted that only affects the first call to nextTuple(), 
+ * which maybe would download a file twice, but then the later calls would be ok
  * 
  * Guaranteed processing strategy:
  * - each file is stored in Redis as a String when download from the consumed service. Default Redis RDB
@@ -86,6 +86,10 @@ public class RestIngestionSpout extends BaseRichSpout {
 	 * */
 	private DatasourceState[] assignedDatasourcesConfs;
 
+	/**
+	 * Class used to store the configuration (inmutable state) and the mutable state 
+	 * for each data source 
+	 * */
 	/*
 	 * AutoValue doesn't support private nested classes
 	 * 
@@ -252,10 +256,13 @@ public class RestIngestionSpout extends BaseRichSpout {
 	private Values getFromRedis(Object tupleId) {
 		Set<String> keys = this.dbConnection.keys(this.redisKeyPrefix + tupleId + "_" + "*");
 		Object [] values = new String[keys.size()];
-		int i = 0;
+		int tupleIndex;
 		for (String key : keys) {
-			values[i] = this.dbConnection.get(key);
-			i++;
+			// NOTE as keys are returned as a set its order is not preserved, hence we
+			// must exploit the definition of storeInRedis, and get the tuple component
+			// index from the last character of the key
+			tupleIndex = Integer.parseInt(key.substring(key.length() - 1));
+			values[tupleIndex] = this.dbConnection.get(key);
 		}
 		return new Values(values);
 	}
@@ -288,8 +295,10 @@ public class RestIngestionSpout extends BaseRichSpout {
 						newData = datasourceState.request().execute().returnContent().asString();
 						break;
 					} catch (ClientProtocolException cpe) {
+						// return code different to 200
 						logDownloadError(datasourceState, cpe);
 					} catch (IOException ioe) {
+						// bad URI or similar
 						logDownloadError(datasourceState, ioe);
 					}
 				}

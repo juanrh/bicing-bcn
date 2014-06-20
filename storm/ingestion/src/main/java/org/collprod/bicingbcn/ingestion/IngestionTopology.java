@@ -72,12 +72,10 @@ public class IngestionTopology {
 	}
 	
 	/**
-	 * Package-private to be used by any component
-	 * 
 	 * @return the result of applying deserializeConfiguration() to each value in serializedConfigs	 * 
 	 * @throws ConfigurationException if there is a problem parsing a configuration
 	 * */
-	static Map<String, Configuration> deserializeConfigurations(Map<String, String> serializedConfigs) throws ConfigurationException  {
+	public static Map<String, Configuration> deserializeConfigurations(Map<String, String> serializedConfigs) throws ConfigurationException  {
 		Map<String, Configuration> deserializedConfigs = new HashMap<String, Configuration>();
 		for (Map.Entry<String, String> datasourceConf : serializedConfigs.entrySet()) {
 				deserializedConfigs.put(datasourceConf.getKey(), deserializeConfiguration(datasourceConf.getValue()));
@@ -133,7 +131,11 @@ public class IngestionTopology {
 		LOGGER.info("Building topology");
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// create a Spout instance per data source
-		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), datasourcesConfigurations.size());
+		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
+				datasourcesConfigurations.size());
+		// TODO adjust parallelism
+		topologyBuilder.setBolt(TimestampParserBolt.class.getName(), new TimestampParserBolt(), 
+				datasourcesConfigurations.size()).localOrShuffleGrouping(RestIngestionSpout.class.getName());
 	
 		// Launch topology
 		LOGGER.info("Launching topology");

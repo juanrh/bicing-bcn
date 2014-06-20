@@ -26,6 +26,10 @@
 			<id>twitter4j</id>
 			<url>http://twitter4j.org/maven2</url>
 		</repository>
+		 <repository>
+      		<id>atlassian-public</id>
+      		<url>https://maven.atlassian.com/content/groups/public/</url>
+    	</repository>
 	</repositories>
 	<dependencies>
 		<dependency>
@@ -58,13 +62,11 @@
   			<artifactId>fluent-hc</artifactId>
   			<version>4.3.4</version>
 		</dependency>
-		
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>17.0</version>
 		</dependency>
-		
 		<dependency>
       		<groupId>com.google.auto.value</groupId>
       		<artifactId>auto-value</artifactId>
@@ -72,6 +74,11 @@
       		"Of course, please upgrade to the final 1.0 release once it is available (likely in April 2014)" -->
       		<version>1.0-rc1</version>
       		<scope>provided</scope>
+    	</dependency>
+    	 <dependency>
+        	<groupId>com.atlassian.fugue</groupId>
+        	<artifactId>fugue</artifactId>
+        	<version>2.1.0</version>
     	</dependency>
 		<dependency>
 			<groupId>redis.clients</groupId>
