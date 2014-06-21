@@ -85,9 +85,6 @@ public class IngestionTopology {
 		return deserializedConfigs;
 	}
 	
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		String ingestionPropertiesPath = DEFAULT_INGESTION_PROPS;
 		String datasourcesPath = DEFAULT_DATASOURCE_PATH;
@@ -95,7 +92,10 @@ public class IngestionTopology {
 		Configuration ingestionConfig  = null;
 		Map<String, String> datasourcesConfigurations = null;
 		
-		System.out.println("Usage: [ingestion properties path] [datatasource path]");
+		System.out.println("Usage: [ingestion properties configuration path] [datatasource path]");
+		System.out.println("\tTopology will be executed in parallel iff the property 'topology.name' in " +
+				"the ingestion configuration is not empty");
+		System.out.println("");
 		if (args.length >= 1) {
 			datasourcesPath  = args[0];
 		}
@@ -116,7 +116,11 @@ public class IngestionTopology {
 		}
 		topologyName = ingestionConfig.getString("topology.name");
 		Config conf = new Config();
-		conf.setDebug(true); // FIXME
+		
+		// FIXME: add a property to ingestionPropertiesPath to turn on and off these stuff  
+		conf.setDebug(true);
+		// conf.put(Config.TOPOLOGY_DEBUG, true); // this is not working, this disables even info logs
+		
 		for (Map.Entry<Object, Object> entry : ConfigurationConverter.getMap(ingestionConfig).entrySet()) {
 			conf.put(entry.getKey().toString(), entry.getValue());
 		}
@@ -129,17 +133,13 @@ public class IngestionTopology {
 		
 		// Build topology
 		LOGGER.info("Building topology");
+			// FIXME: probably this should be computed as a multiple of a 
+			// a property added to ingestionPropertiesPath. For now use to avoid crushing the VM 
+		conf.put(Config.TOPOLOGY_WORKERS, 2);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// create a Spout instance per data source
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
 				datasourcesConfigurations.size());
-		// TODO adjust parallelism
-			// must group by data source id so the same TimestampParserBolt controls the 
-			// timestamp of the last data which was downloaded
-		topologyBuilder.setBolt(TimestampParserBolt.class.getName(), new TimestampParserBolt(),
-				datasourcesConfigurations.size()).fieldsGrouping(RestIngestionSpout.class.getName(), 
-																 new Fields(RestIngestionSpout.DATASOURCE_ID));
-		
 		// TODO try to use localOrShuffleGrouping when possible
 	
 		// Launch topology
