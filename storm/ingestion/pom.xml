@@ -30,6 +30,10 @@
       		<id>atlassian-public</id>
       		<url>https://maven.atlassian.com/content/groups/public/</url>
     	</repository>
+   		<repository>
+      		<id>cloudera</id>
+      		<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+    	</repository>
 	</repositories>
 	<dependencies>
 		<dependency>
@@ -39,9 +43,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>storm</groupId>
-			<artifactId>storm</artifactId>
-			<version>0.9.0.1</version>
+			<groupId>org.apache.storm</groupId>
+			<artifactId>storm-core</artifactId>
+			<!--  Storm 0.9.0.1 doesn't work with Hadoop libraries -->
+			<version>0.9.1-incubating</version>
 			<!-- keep storm out of the jar-with-dependencies -->
 			<scope>provided</scope>
 		</dependency>
@@ -57,10 +62,18 @@
 			<version>2.6</version>
 		</dependency>
 		<!-- Apache HTP for service consumption -->
-		<dependency>
+		<!--  version 4.3.4 doesn't work with storm 0.9.1-incubating -->
+	  	<dependency>
   			<groupId>org.apache.httpcomponents</groupId>
   			<artifactId>fluent-hc</artifactId>
-  			<version>4.3.4</version>
+  			<version>4.3.3</version>
+		</dependency>
+		<!-- httpclient is needed as an explicit dependency for fluent-hc
+		version 4.3.3, but not for version 4.3.3  --> 
+		<dependency>
+    		<groupId>org.apache.httpcomponents</groupId>
+    		<artifactId>httpclient</artifactId>
+    		<version>4.3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -94,7 +107,23 @@
   			<version>1.7.7</version>
 		</dependency>
 		-->
-		
+		<dependency>
+  			<groupId>org.apache.avro</groupId>
+  			<artifactId>avro</artifactId>
+  			<version>1.7.6</version>
+		</dependency>
+		<!--  The exclusion prevents a "SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation. -->
+	   	<dependency>
+    		<groupId>org.apache.hadoop</groupId>
+    		<artifactId>hadoop-client</artifactId>
+    		<version>2.0.0-mr1-cdh4.4.0</version>
+    			<exclusions>
+					<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+					</exclusion>
+				</exclusions>
+  		</dependency> 
 	</dependencies>
 	<build>
 		<resources>
