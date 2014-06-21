@@ -11,6 +11,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Optional;
+
 
 /**
  * Unit tests for class BicingBCNTimeStampParser
@@ -51,15 +53,15 @@ public class BicingBCNTimeStampParserTest {
 	@Test
 	public void sucessfulParse() throws IOException {
 		String okFileContents = loadTestFile(this.getClass().getResource(TEST_FILENAME_SUCCESS_1).getFile());
-		Long timestamp = parser.apply(okFileContents);
-		Assert.assertNotNull(timestamp);
-		Assert.assertEquals(new Long(1401551587), timestamp);
+		Optional<Long> timestamp = parser.apply(okFileContents);
+		Assert.assertTrue(timestamp.isPresent());
+		Assert.assertEquals(new Long(1401551587), timestamp.get());
 	}
 	
 	@Test
 	public void failingParse() throws IOException {
 		String badFileContents = loadTestFile(this.getClass().getResource(TEST_FILENAME_FAIL_1).getFile());
-		Long timestamp = parser.apply(badFileContents);
-		Assert.assertNull(timestamp);
+		Optional<Long> timestamp = parser.apply(badFileContents);
+		Assert.assertFalse(timestamp.isPresent());
 	}
 }

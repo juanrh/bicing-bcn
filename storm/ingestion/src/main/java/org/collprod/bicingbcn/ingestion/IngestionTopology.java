@@ -19,6 +19,7 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
@@ -84,7 +85,6 @@ public class IngestionTopology {
 		return deserializedConfigs;
 	}
 	
-	
 	/**
 	 * @param args
 	 */
@@ -134,8 +134,13 @@ public class IngestionTopology {
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
 				datasourcesConfigurations.size());
 		// TODO adjust parallelism
-		topologyBuilder.setBolt(TimestampParserBolt.class.getName(), new TimestampParserBolt(), 
-				datasourcesConfigurations.size()).localOrShuffleGrouping(RestIngestionSpout.class.getName());
+			// must group by data source id so the same TimestampParserBolt controls the 
+			// timestamp of the last data which was downloaded
+		topologyBuilder.setBolt(TimestampParserBolt.class.getName(), new TimestampParserBolt(),
+				datasourcesConfigurations.size()).fieldsGrouping(RestIngestionSpout.class.getName(), 
+																 new Fields(RestIngestionSpout.DATASOURCE_ID));
+		
+		// TODO try to use localOrShuffleGrouping when possible
 	
 		// Launch topology
 		LOGGER.info("Launching topology");
