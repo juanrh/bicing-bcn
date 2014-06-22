@@ -24,4 +24,17 @@ popd
 # This includes suitable stdout messages
 sudo service redis start
 ###################
+
+####################
+# Storm distributed
+####################
+echo "Starting Storm distributed"
+storm nimbus &
+storm supervisor &
+storm ui &
+echo "Check http://localhost:8080/ for the Storm UI"
+# sudo storm drpc & # currently not used
+
+echo "Done starting Storm distributed"
+
 echo "Done starting bicingbcn"

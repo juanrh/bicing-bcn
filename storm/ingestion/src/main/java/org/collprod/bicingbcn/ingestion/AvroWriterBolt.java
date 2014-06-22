@@ -1,19 +1,25 @@
 package org.collprod.bicingbcn.ingestion;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.mapred.FsInput;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.fs.FileSystem;
-import org.collprod.bicingbcn.ingestion.commons.MutableOptionalObject;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +30,11 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 /**
  * Writes the data to the HDFS path specified in the configuration for this data source
  * Data is serialized in Avro with an Avro file per month, hence it is stored in the path
@@ -41,6 +52,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(AvroWriterBolt.class);
 	private static final SimpleDateFormat MONTH_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+	private static final int FILEWRITER_SYNC_INTERVAL = 100;
 	
 	public static final String AVRO_RECORD_NAME = "data";
 	public static final String AVRO_RECORD_NAMESPACE = "org.collprod";
@@ -55,64 +67,108 @@ public class AvroWriterBolt extends BaseRichBolt {
 					.name(AVRO_CONTENT_FIELD).type(Schema.create(Schema.Type.STRING)).noDefault()
 				.endRecord();
 	}
+	/**
+	 * Storm collector to emit tuples
+	 * */
+	private OutputCollector collector;
 	
+	private org.apache.hadoop.conf.Configuration hadoopConf;
 	private FileSystem hdfs;	
 	
-	/**
-	 * State for each data source
-	 * */
-	private Map<String, DatasourceState> datasourceStates;
+	private Map<String, String> datasourcesDirectories;
 	
 	@AutoValue
-	static abstract class DatasourceState {
-		DatasourceState() {}
-		public static DatasourceState create(String targetDirectory, 
-											 MutableOptionalObject<String> currentTargetMonth,
-											 MutableOptionalObject<DataFileWriter<GenericRecord>> currentTargetWriter) {
-	        return new AutoValue_AvroWriterBolt_DatasourceState(targetDirectory, currentTargetMonth,
-	        								 currentTargetWriter);
-	      }
+	static abstract class DatasourceMonth {
+		DatasourceMonth() {}
+		public static DatasourceMonth create(String datasource, String month) {
+			return new AutoValue_AvroWriterBolt_DatasourceMonth(datasource, month);
+		}
+		public abstract String datasource();
+		public abstract String month();
+	}
+	
+	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> writersCache;
+	
+	/**
+	 * Builds the target file path as <datasource directory>/<month>.avro.
+	 * If the target file already exists, then it is open for appending, otherwise it is created
+	 * */
+	private DataFileWriter<GenericRecord> openHDFSFile(DatasourceMonth datasourceMonth) throws IOException {
+		DataFileWriter<GenericRecord> writer = new DataFileWriter<GenericRecord>(
+				new GenericDatumWriter<GenericRecord>(AVRO_SCHEMA));
+		writer.setSyncInterval(FILEWRITER_SYNC_INTERVAL);
+		// writer.setCodec(CodecFactory.snappyCodec()); // omit for now
 		
-		/**
-		 * Target directory for the datasource
-		 * 	
-		 * Kind: inmutable configuration
-		 * */
-		public abstract String targetDirectory();
-		/**
-		 * Current month in the same format as MONTH_FORMATTER. 
-		 * The base name of the target file will be this value with the 
-		 * extension .avro added at the end
-		 * 
-		 * Kind: mutable state
-		 * */
-		public abstract MutableOptionalObject<String> currentTargetMonth();
+		Path targetPath = new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
+				+ "/"+  datasourceMonth.month() + ".avro");
+		// Append to an existing file, or create a new file is file otherwise
+		if (this.hdfs.exists(targetPath)) {
+			// FIXME: this is not working. Intead create a new file by adding numbers before the avro
+			// extension (e.g. 2014-06-22.avro, 2014-06-22-1.avro, ...). List current directory to
+			// discover last index
+			
+			// appending to an existing file	
+			LOGGER.info("Appending to existing file {}", 
+					targetPath);
+			OutputStream outputStream = this.hdfs.append(targetPath);
+			writer.appendTo(new FsInput(targetPath, this.hadoopConf), outputStream); 
+		} else {
+			// creating a new file
+			LOGGER.info("Creating new file for datasource {} and month {}", 
+					datasourceMonth.datasource(), datasourceMonth.month());
+			OutputStream outputStream = this.hdfs.create(targetPath);
+			writer.create(AVRO_SCHEMA, outputStream);
+		}
 		
-		/**
-		 * Current DataFileWriter
-		 * 
-		 * Kind: mutable state
-		 * */
-		public abstract MutableOptionalObject<DataFileWriter<GenericRecord>> currentTargetWriter();
+		return writer;
+	}
+	
+	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> createWritersCache() {
+		CacheLoader<DatasourceMonth, DataFileWriter<GenericRecord>> loader = 
+				new CacheLoader<DatasourceMonth, DataFileWriter<GenericRecord>> () {
+			@Override
+			public DataFileWriter<GenericRecord> load(DatasourceMonth datasourceMonth)
+					throws Exception {
+				return AvroWriterBolt.this.openHDFSFile(datasourceMonth);
+			}
+		};
+		
+		// A synchronous removal listener should be enough in principle 
+		RemovalListener<DatasourceMonth, DataFileWriter<GenericRecord>> removalListener = 
+				new RemovalListener<DatasourceMonth, DataFileWriter<GenericRecord>>() {
+			@Override
+			public void onRemoval(
+					RemovalNotification<DatasourceMonth, DataFileWriter<GenericRecord>> removal) {
+				try {
+					LOGGER.info("Closing file for datasource {}", removal.getKey().datasource());
+					removal.getValue().close();
+				} catch (IOException ioe) {
+					LOGGER.error("Error closing file for datasource {}: {}", 
+								removal.getKey().datasource(), ioe.getMessage());
+					throw new RuntimeException(ioe);
+				}
+			}
+		};
+
+		return CacheBuilder.newBuilder()
+				.expireAfterAccess(3, TimeUnit.MINUTES)
+				.removalListener(removalListener)
+				.build(loader);
 	}
 	
 	@Override
 	public void prepare(@SuppressWarnings("rawtypes") Map stormConf, TopologyContext context,
 			OutputCollector collector) {
+		this.collector = collector;
+		
 		// Load target datasource directories from Storm configuration 
-		this.datasourceStates = new HashMap<String, DatasourceState>(); 
 		try {
 			Map<String, Configuration> datasourcesConfigurations = 
 					IngestionTopology.deserializeConfigurations((Map<String, String>) stormConf.get(IngestionTopology.DATASOURCE_CONF_KEY));
+			this.datasourcesDirectories = new HashMap<String, String>();
 			for (Map.Entry<String, Configuration> datasourceConfig : datasourcesConfigurations.entrySet()) {
-				this.datasourceStates.put(datasourceConfig.getKey(), 
-						DatasourceState.create(datasourceConfig.getValue().getString("hdfs_path"),
-								// created absent 
-								new MutableOptionalObject<String>(),
-								// created absent 
-								new MutableOptionalObject<DataFileWriter<GenericRecord>>())
-						
-						);
+				this.datasourcesDirectories.put(datasourceConfig.getKey(),
+											    datasourceConfig.getValue().getString("hdfs_path"));
 			}
 		} catch (ConfigurationException ce) {
 			LOGGER.error("Error parsing datasource configurations: " + ce.getMessage());
@@ -121,30 +177,70 @@ public class AvroWriterBolt extends BaseRichBolt {
 		
 		// Create objects to interact with HDFS
 			// This configuration reads from the default files
-		org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration(true);
+		this.hadoopConf = new org.apache.hadoop.conf.Configuration(true);
 		try {
-			this.hdfs = FileSystem.get(conf);
+			this.hdfs = FileSystem.get(this.hadoopConf);
 		} catch (IOException ioe) {
 			LOGGER.error("Error connecting to HDFS: " + ioe.getMessage());
 			throw new RuntimeException(ioe);
 		}
-
+		
+		// Initialize cache for DataFileWriter objects
+		this.writersCache = createWritersCache();
+	}
+	
+	private String timestampToMonth(long timestamp) {
+		// convert from the seconds returned by a TimestampParser
+		// to the milliseconds accepted by Date
+		return MONTH_FORMATTER.format(new Date(timestamp * 1000));
 	}
 
 	@Override
 	public void execute(Tuple inputTuple) {
-		// get state for the input data source
-		String datasource = inputTuple.getStringByField("RestIngestionSpout.DATASOURCE_ID");
-		DatasourceState datasourceState = this.datasourceStates.get(datasource);
+		/* Processing tuples of the shape
+		   (DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD) */
 		
+		// get datasource
+		String datasource = inputTuple.getStringByField(RestIngestionSpout.DATASOURCE_ID);
 		// compute month
 		long timestamp = inputTuple.getLongByField(TimestampParserBolt.TIMESTAMP_FIELD);
 			// this computation is completely stateless 
-		String month = MONTH_FORMATTER.format(new Date(timestamp)); 
+		String month = timestampToMonth(timestamp);
 		
+		// now get the DataFileWriter
+		DataFileWriter<GenericRecord> writer = null;
+		try {
+			writer = 
+					this.writersCache.get(DatasourceMonth.create(datasource, month));
+		} catch (ExecutionException ee) {
+			LOGGER.error("Error getting DataFileWriter for tuple for datasource " + datasource 
+					+ " and timestamp " + timestamp + " : " + ee.getMessage());	
+			this.collector.fail(inputTuple);
+			return;
+		}
 		
-
-		// TODO don't forget to ACK or fail 
+		// create and write a new record
+		GenericRecord newDataRecord = new GenericData.Record(AVRO_SCHEMA);
+		newDataRecord.put(AVRO_TIMESTAMP_FIELD, new Long(timestamp));
+		newDataRecord.put(AVRO_CONTENT_FIELD, inputTuple.getStringByField(RestIngestionSpout.CONTENT_FIELD));
+		try {
+			writer.append(newDataRecord);
+		} catch (IOException ioe) {
+			LOGGER.error("Error writing Avro record for datasource " + datasource 
+					+ " and timestamp " + timestamp + " : " + ioe.getMessage());	
+			this.collector.fail(inputTuple);
+			return;
+		}
+		
+		// ACK processing for this tupe as ok
+		this.collector.ack(inputTuple);
+	}
+	
+	@Override
+	public void cleanup() {
+		// Invalidate all the elements in the DataFileWriter cache. As a result the removal 
+		// listeners will close the corresponding files
+		this.writersCache.invalidateAll();
 	}
 
 	@Override

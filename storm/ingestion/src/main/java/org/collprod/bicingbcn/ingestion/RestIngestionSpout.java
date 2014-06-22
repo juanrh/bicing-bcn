@@ -38,7 +38,7 @@ import com.google.common.math.LongMath;
  * Emits tuples of the following shape:
  *  - DATASOURCE_ID :: String
  *  - TIMESTAMP_FIELD :: Long
- *  - CONTENT_FIELD :: Long
+ *  - CONTENT_FIELD :: String
  *  
  * This spouts parses the timestamp of the data and drops that data which was already downloaded, i.e., 
  * which has a timestamp less or equal to the last timestamp. This parsing is not performed in a 
@@ -422,6 +422,10 @@ public class RestIngestionSpout extends BaseRichSpout {
 	public void fail(Object tupleId) {
 		Values tuple = getFromRedis(tupleId); 		
 		String datasourceId = tuple.get(0).toString();
+			// this type conversion is necessary as tuples are serialized in Redis
+			// with a String in each component, and the bolts expect a Long value 
+			// for that field
+		tuple.set(1, Long.parseLong(tuple.get(1).toString()));
 		LOGGER.warn("Failed to process data for data source {}, will retry", datasourceId);
 		this.collector.emit(tuple, tupleId);
 	}

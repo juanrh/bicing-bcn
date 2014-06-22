@@ -1,15 +1,21 @@
 package org.collprod.bicingbcn.ingestion;
 
+import java.io.BufferedReader;
 import java.io.CharArrayWriter;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,15 +25,19 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
 
 /**
  * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
+ * 
+ * Run in distributed mode by setting "ingestion.properties:topology.name" to a
+ * not empty value and executing:
+ * 
+ * [cloudera@localhost ingestion]$ storm jar target/storm-ingestion-0.0.1-SNAPSHOT.jar org.collprod.bicingbcn.ingestion.IngestionTopology
  * */
 public class IngestionTopology {
 	// For running using ${workspace_loc:storm-ingestion/src/main/resources} as working directory
-	private static final String DEFAULT_INGESTION_PROPS="ingestion.properties";
-	private static final String DEFAULT_DATASOURCE_PATH = "datasources";
+	private static final String DEFAULT_INGESTION_PROPS="/ingestion.properties";
+	private static final String DEFAULT_DATASOURCE_PATH = "datasources"; // local as prefix for Reflections
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(IngestionTopology.class);
 
@@ -48,7 +58,8 @@ public class IngestionTopology {
 	private static Map<String, String> loadDatasources(String datasourcesPath) throws ConfigurationException  {
 		CharArrayWriter charWriter = new CharArrayWriter();
 		Map<String, String> configurations = new HashMap<String, String>();
-		for (File datasourceConfigFile : new File(datasourcesPath).listFiles()) {
+		Set<String> files = new Reflections(datasourcesPath, new ResourcesScanner()).getResources(Pattern.compile(".*\\.properties"));
+		for (String datasourceConfigFile : files) {
 			PropertiesConfiguration datasourceConfig = new PropertiesConfiguration(datasourceConfigFile);
 			charWriter.reset();
 			datasourceConfig.save(charWriter);
@@ -86,12 +97,14 @@ public class IngestionTopology {
 	}
 	
 	public static void main(String[] args) {
-		String ingestionPropertiesPath = DEFAULT_INGESTION_PROPS;
-		String datasourcesPath = DEFAULT_DATASOURCE_PATH;
+		// FIXME: delete arguments parsing, only configuration is resources will be supported,
+		// to easy use with Storm distributed. Also rename variables accordingly
+		String ingestionPropertiesPath = IngestionTopology.class.getResource(DEFAULT_INGESTION_PROPS).getFile();
+		String datasourcesPath = DEFAULT_DATASOURCE_PATH; // resolver later with Reflections
 		String topologyName = null;
-		Configuration ingestionConfig  = null;
+		PropertiesConfiguration ingestionConfig  = null;
 		Map<String, String> datasourcesConfigurations = null;
-		
+				
 		System.out.println("Usage: [ingestion properties configuration path] [datatasource path]");
 		System.out.println("\tTopology will be executed in parallel iff the property 'topology.name' in " +
 				"the ingestion configuration is not empty");
@@ -107,8 +120,12 @@ public class IngestionTopology {
 		// Load configuration
 		LOGGER.info("Loading configuration");
 		try{
-			ingestionConfig = new PropertiesConfiguration(new File(ingestionPropertiesPath));	
+			ingestionConfig = new PropertiesConfiguration();
+			ingestionConfig.load(new BufferedReader(new InputStreamReader(IngestionTopology.class.getResourceAsStream(DEFAULT_INGESTION_PROPS))));
+			LOGGER.info("main configuration loaded");
+			System.out.println(ingestionConfig.isEmpty());
 			datasourcesConfigurations = loadDatasources(datasourcesPath);
+			LOGGER.info("data sources configuration loaded");
 		} catch(ConfigurationException ce) {
 			LOGGER.error("There was an error loading configuration, program will stop: " + ce.getMessage());
 			ce.printStackTrace();
@@ -137,11 +154,12 @@ public class IngestionTopology {
 			// a property added to ingestionPropertiesPath. For now use to avoid crushing the VM 
 		conf.put(Config.TOPOLOGY_WORKERS, 2);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
-		// create a Spout instance per data source
+		// create a Spout instance / task per data source
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
 				datasourcesConfigurations.size());
-		// TODO try to use localOrShuffleGrouping when possible
-	
+		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
+				datasourcesConfigurations.size() * 2).localOrShuffleGrouping(RestIngestionSpout.class.getName());
+		
 		// Launch topology
 		LOGGER.info("Launching topology");
 		if(topologyName != null && !topologyName.equals("")) {
