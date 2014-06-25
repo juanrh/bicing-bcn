@@ -101,20 +101,25 @@ public class AvroWriterBolt extends BaseRichBolt {
 		
 		Path targetPath = new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
 				+ "/"+  datasourceMonth.month() + ".avro");
+
+			// just for logging
+		String fullTargetPath = this.hdfs.getWorkingDirectory() + "/" + targetPath;
 		// Append to an existing file, or create a new file is file otherwise
 		if (this.hdfs.exists(targetPath)) {
 			// FIXME: this is not working. Intead create a new file by adding numbers before the avro
 			// extension (e.g. 2014-06-22.avro, 2014-06-22-1.avro, ...). List current directory to
 			// discover last index
 			
+			// FIXME this is due to using a single node sandbox, TODO turn on and off by configuration
+			this.hdfs.setReplication(targetPath, (short)1);
+			
 			// appending to an existing file	
-			LOGGER.info("Appending to existing file {}", 
-					targetPath);
+			LOGGER.info("Appending to existing file {}", fullTargetPath);
 			OutputStream outputStream = this.hdfs.append(targetPath);
 			writer.appendTo(new FsInput(targetPath, this.hadoopConf), outputStream); 
 		} else {
 			// creating a new file
-			LOGGER.info("Creating new file for datasource {} and month {}", 
+			LOGGER.info("Creating new file "  +  fullTargetPath + " for datasource {} and month {}", 
 					datasourceMonth.datasource(), datasourceMonth.month());
 			OutputStream outputStream = this.hdfs.create(targetPath);
 			writer.create(AVRO_SCHEMA, outputStream);
@@ -178,6 +183,9 @@ public class AvroWriterBolt extends BaseRichBolt {
 		// Create objects to interact with HDFS
 			// This configuration reads from the default files
 		this.hadoopConf = new org.apache.hadoop.conf.Configuration(true);
+		hadoopConf.addResource(new Path(stormConf.get("hadoop.res.core-site").toString()));
+		hadoopConf.addResource(new Path(stormConf.get("hadoop.res.hdfs-site").toString()));
+		
 		try {
 			this.hdfs = FileSystem.get(this.hadoopConf);
 		} catch (IOException ioe) {

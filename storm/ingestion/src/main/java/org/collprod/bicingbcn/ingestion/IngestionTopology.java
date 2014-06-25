@@ -36,8 +36,10 @@ import backtype.storm.topology.TopologyBuilder;
  * */
 public class IngestionTopology {
 	// For running using ${workspace_loc:storm-ingestion/src/main/resources} as working directory
-	private static final String DEFAULT_INGESTION_PROPS="/ingestion.properties";
+	private static final String DEFAULT_INGESTION_PROPS="ingestion.properties";
 	private static final String DEFAULT_DATASOURCE_PATH = "datasources"; // local as prefix for Reflections
+	
+	private static final String LOCAL_TOPOLOGY_NAME = IngestionTopology.class.getName() + "-local_test";
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(IngestionTopology.class);
 
@@ -96,53 +98,62 @@ public class IngestionTopology {
 		return deserializedConfigs;
 	}
 	
-	public static void main(String[] args) {
-		// FIXME: delete arguments parsing, only configuration is resources will be supported,
-		// to easy use with Storm distributed. Also rename variables accordingly
-		String ingestionPropertiesPath = IngestionTopology.class.getResource(DEFAULT_INGESTION_PROPS).getFile();
-		String datasourcesPath = DEFAULT_DATASOURCE_PATH; // resolver later with Reflections
-		String topologyName = null;
+	public static Config loadConfiguration() {
 		PropertiesConfiguration ingestionConfig  = null;
 		Map<String, String> datasourcesConfigurations = null;
-				
-		System.out.println("Usage: [ingestion properties configuration path] [datatasource path]");
-		System.out.println("\tTopology will be executed in parallel iff the property 'topology.name' in " +
-				"the ingestion configuration is not empty");
-		System.out.println("");
-		if (args.length >= 1) {
-			datasourcesPath  = args[0];
-		}
+		String topologyName = null;
 		
-		if (args.length >= 2) {
-			datasourcesPath = args[1];
-		}
-		
-		// Load configuration
 		LOGGER.info("Loading configuration");
+		Config conf = new Config();
+		
 		try{
 			ingestionConfig = new PropertiesConfiguration();
-			ingestionConfig.load(new BufferedReader(new InputStreamReader(IngestionTopology.class.getResourceAsStream(DEFAULT_INGESTION_PROPS))));
+			ingestionConfig.load(new BufferedReader(new InputStreamReader(
+						IngestionTopology.class.getResourceAsStream("/" + DEFAULT_INGESTION_PROPS))));
 			LOGGER.info("main configuration loaded");
 			System.out.println(ingestionConfig.isEmpty());
-			datasourcesConfigurations = loadDatasources(datasourcesPath);
+			datasourcesConfigurations = loadDatasources(DEFAULT_DATASOURCE_PATH);
 			LOGGER.info("data sources configuration loaded");
 		} catch(ConfigurationException ce) {
 			LOGGER.error("There was an error loading configuration, program will stop: " + ce.getMessage());
 			ce.printStackTrace();
 			System.exit(1);
 		}
-		topologyName = ingestionConfig.getString("topology.name");
-		Config conf = new Config();
 		
-		// FIXME: add a property to ingestionPropertiesPath to turn on and off these stuff  
-		conf.setDebug(true);
-		// conf.put(Config.TOPOLOGY_DEBUG, true); // this is not working, this disables even info logs
-		
+		// add ingestionConfig to conf
 		for (Map.Entry<Object, Object> entry : ConfigurationConverter.getMap(ingestionConfig).entrySet()) {
 			conf.put(entry.getKey().toString(), entry.getValue());
 		}
+		
+		// add datasourcesConfigurations to conf
 		conf.put(DATASOURCE_CONF_KEY, datasourcesConfigurations);
+		
+		// add topologyName to conf
+		topologyName = ingestionConfig.getString("topology.name");
+		if (topologyName.equals("")) {
+			topologyName = LOCAL_TOPOLOGY_NAME;
+		}
+		conf.put(Config.TOPOLOGY_NAME, topologyName);
+		
+		// add other common fields to conf
+		// FIXME: add a property to ingestionPropertiesPath to turn on and off these stuff  
+		conf.setDebug(true);
+		// conf.put(Config.TOPOLOGY_DEBUG, true); // this is not working, this disables even info logs
+
 		LOGGER.info("Done loading configuration");
+		
+		return conf;
+	} 
+	
+	public static void main(String[] args) {		
+		System.out.println("Usage: configuration will be load from " + DEFAULT_INGESTION_PROPS 
+								+ "add data sources to " + DEFAULT_DATASOURCE_PATH);
+		System.out.println("\tTopology will be executed in parallel iff the property 'topology.name' in " +
+				"the ingestion configuration is not empty");
+		System.out.println("");
+
+		// Load configuration
+		Config conf = loadConfiguration();
 		
 		// Clear Redis
 		// TODO: this is mostly for testing, but maybe should be permanent, think about it
@@ -150,24 +161,28 @@ public class IngestionTopology {
 		
 		// Build topology
 		LOGGER.info("Building topology");
+		@SuppressWarnings("rawtypes")
+		int numDatasources = ((Map) conf.get(IngestionTopology.DATASOURCE_CONF_KEY)).size();
+		LOGGER.info("Found {} different datasources", numDatasources);
 			// FIXME: probably this should be computed as a multiple of a 
-			// a property added to ingestionPropertiesPath. For now use to avoid crushing the VM 
-		conf.put(Config.TOPOLOGY_WORKERS, 2);
+			// a property added to ingestionPropertiesPath. For now use 2 to avoid crushing the VM
+			// FIXME: use an extra dummy datasource and test with 2 datasources
+		conf.put(Config.TOPOLOGY_WORKERS, 1);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// create a Spout instance / task per data source
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
-				datasourcesConfigurations.size());
+								 numDatasources);
 		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
-				datasourcesConfigurations.size() * 2).localOrShuffleGrouping(RestIngestionSpout.class.getName());
+								numDatasources * 2).localOrShuffleGrouping(RestIngestionSpout.class.getName());
 		
 		// Launch topology
 		LOGGER.info("Launching topology");
-		if(topologyName != null && !topologyName.equals("")) {
+		if(! conf.get(Config.TOPOLOGY_NAME).equals(LOCAL_TOPOLOGY_NAME)) {
 			// run in distributed mode
 				// FIXME, but at least as many workers as data sources
-			conf.setNumWorkers(datasourcesConfigurations.size() * 2); 
+			conf.setNumWorkers(numDatasources * 2); 
 			try {
-				StormSubmitter.submitTopology(topologyName, conf, topologyBuilder.createTopology());
+				StormSubmitter.submitTopology(conf.get(Config.TOPOLOGY_NAME).toString(), conf, topologyBuilder.createTopology());
 			} catch (AlreadyAliveException e) {
 				e.printStackTrace();
 			} catch (InvalidTopologyException e) {
