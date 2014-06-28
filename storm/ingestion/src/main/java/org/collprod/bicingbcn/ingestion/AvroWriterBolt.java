@@ -89,6 +89,11 @@ public class AvroWriterBolt extends BaseRichBolt {
 	
 	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> writersCache;
 	
+	
+	private Path buildTargetPath(DatasourceMonth datasourceMonth) {
+		return new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
+				+ "/"+  datasourceMonth.month() + ".avro");
+	}
 	/**
 	 * Builds the target file path as <datasource directory>/<month>.avro.
 	 * If the target file already exists, then it is open for appending, otherwise it is created
@@ -99,21 +104,18 @@ public class AvroWriterBolt extends BaseRichBolt {
 		writer.setSyncInterval(FILEWRITER_SYNC_INTERVAL);
 		// writer.setCodec(CodecFactory.snappyCodec()); // omit for now
 		
-		Path targetPath = new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
-				+ "/"+  datasourceMonth.month() + ".avro");
+		Path targetPath = buildTargetPath(datasourceMonth);
+//					new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
+//				+ "/"+  datasourceMonth.month() + ".avro");
 
 			// just for logging
 		String fullTargetPath = this.hdfs.getWorkingDirectory() + "/" + targetPath;
 		// Append to an existing file, or create a new file is file otherwise
 		if (this.hdfs.exists(targetPath)) {
-			// FIXME: this is not working. Intead create a new file by adding numbers before the avro
-			// extension (e.g. 2014-06-22.avro, 2014-06-22-1.avro, ...). List current directory to
-			// discover last index
-			
-			// FIXME this is due to using a single node sandbox, TODO turn on and off by configuration
+			// appending to an existing file
+			// based on http://technicaltidbit.blogspot.com.es/2013/02/avro-can-append-in-hdfs-after-all.html
+				// FIXME this is due to using a single node sandbox, TODO turn on and off by configuration
 			this.hdfs.setReplication(targetPath, (short)1);
-			
-			// appending to an existing file	
 			LOGGER.info("Appending to existing file {}", fullTargetPath);
 			OutputStream outputStream = this.hdfs.append(targetPath);
 			writer.appendTo(new FsInput(targetPath, this.hadoopConf), outputStream); 
