@@ -260,21 +260,18 @@ public class AvroWriterBolt extends BaseRichBolt {
 		this.collector.ack(inputTuple);
 	}
 	
+	/**
+	 * This method is useless in cluster mode, as stated by Storms documentation
+	 * 
+	 * http://nathanmarz.github.io/storm/doc-0.8.1/backtype/storm/task/IBolt.html#cleanup()
+	 * 
+	 * "Called when an IBolt is going to be shutdown. There is no guarentee that cleanup will be called, 
+	 * because the supervisor kill -9's worker processes on the cluster.
+	 * The one context where cleanup is guaranteed to be called is when a topology is killed when running Storm in local mode."
+	 * */
 	@Override
 	public void cleanup() {
-		/*
-		 * This method is useless in cluster mode, as stated by Storms documentation
-		 * 
-		 * http://nathanmarz.github.io/storm/doc-0.8.1/backtype/storm/task/IBolt.html#cleanup()
-		 * 
-		 * "Called when an IBolt is going to be shutdown. There is no guarentee that cleanup will be called, 
-		 * because the supervisor kill -9's worker processes on the cluster.
-		 * The one context where cleanup is guaranteed to be called is when a topology is killed when running Storm in local mode."
-		 * */
-	}
-	
-	@Override
-	protected void finalize() throws Throwable {
+
 		// Invalidate all the elements in the DataFileWriter cache. As a result the removal 
 		// listeners will close the corresponding files
 		this.writersCache.invalidateAll();
