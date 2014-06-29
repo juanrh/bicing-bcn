@@ -2,7 +2,6 @@ package org.collprod.bicingbcn.ingestion;
 
 import java.io.BufferedReader;
 import java.io.CharArrayWriter;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.HashMap;
@@ -25,6 +24,7 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
@@ -169,12 +169,17 @@ public class IngestionTopology {
 			// FIXME: use an extra dummy datasource and test with 2 datasources
 		conf.put(Config.TOPOLOGY_WORKERS, 1);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
-		// create a Spout instance / task per data source
+		// Create a Spout instance / task per data source, to handle only that connection
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
 								 numDatasources);
+		// We use fieldsGrouping so tuples for the same datasource go to the same AvroWriterBolt, which 
+		// opens an HDFS file for the data source and each month. This prevents the situation where two 
+		// different  AvroWriterBolts try to open the same file
+		// This also implies we need an executor per datasource
 		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
-								numDatasources * 2).localOrShuffleGrouping(RestIngestionSpout.class.getName());
-		
+								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
+																new Fields(RestIngestionSpout.DATASOURCE_ID));
+								
 		// Launch topology
 		LOGGER.info("Launching topology");
 		if(! conf.get(Config.TOPOLOGY_NAME).equals(LOCAL_TOPOLOGY_NAME)) {

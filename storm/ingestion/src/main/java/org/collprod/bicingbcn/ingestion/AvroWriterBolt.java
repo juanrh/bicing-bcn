@@ -53,6 +53,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AvroWriterBolt.class);
 	private static final SimpleDateFormat MONTH_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
 	private static final int FILEWRITER_SYNC_INTERVAL = 100;
+	private static final int CACHE_EXPIRATION_TIME = 3;
 	
 	public static final String AVRO_RECORD_NAME = "data";
 	public static final String AVRO_RECORD_NAMESPACE = "org.collprod";
@@ -71,12 +72,23 @@ public class AvroWriterBolt extends BaseRichBolt {
 	 * Storm collector to emit tuples
 	 * */
 	private OutputCollector collector;
-	
+
+	// Configuration
+	private Map<String, String> datasourcesDirectories;
+
+	// HDFS stuff
 	private org.apache.hadoop.conf.Configuration hadoopConf;
 	private FileSystem hdfs;	
-	
-	private Map<String, String> datasourcesDirectories;
-	
+	private boolean debugMode; 
+
+	// State
+	/**
+	 * As the order of the tuples is not preserved we might open a file for a new month and 
+	 * then get a tuple for the previous month. We use this cache to keeps open the files 
+	 * for several datasource-month pairs until not used for CACHE_EXPIRATION_TIME minutes 
+	 * */
+	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> writersCache;
+
 	@AutoValue
 	static abstract class DatasourceMonth {
 		DatasourceMonth() {}
@@ -86,9 +98,6 @@ public class AvroWriterBolt extends BaseRichBolt {
 		public abstract String datasource();
 		public abstract String month();
 	}
-	
-	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> writersCache;
-	
 	
 	private Path buildTargetPath(DatasourceMonth datasourceMonth) {
 		return new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
@@ -105,17 +114,15 @@ public class AvroWriterBolt extends BaseRichBolt {
 		// writer.setCodec(CodecFactory.snappyCodec()); // omit for now
 		
 		Path targetPath = buildTargetPath(datasourceMonth);
-//					new Path(this.datasourcesDirectories.get(datasourceMonth.datasource())
-//				+ "/"+  datasourceMonth.month() + ".avro");
-
 			// just for logging
 		String fullTargetPath = this.hdfs.getWorkingDirectory() + "/" + targetPath;
 		// Append to an existing file, or create a new file is file otherwise
 		if (this.hdfs.exists(targetPath)) {
 			// appending to an existing file
 			// based on http://technicaltidbit.blogspot.com.es/2013/02/avro-can-append-in-hdfs-after-all.html
-				// FIXME this is due to using a single node sandbox, TODO turn on and off by configuration
-			this.hdfs.setReplication(targetPath, (short)1);
+			if (debugMode) {
+				this.hdfs.setReplication(targetPath, (short)1);
+			}
 			LOGGER.info("Appending to existing file {}", fullTargetPath);
 			OutputStream outputStream = this.hdfs.append(targetPath);
 			writer.appendTo(new FsInput(targetPath, this.hadoopConf), outputStream); 
@@ -158,7 +165,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 		};
 
 		return CacheBuilder.newBuilder()
-				.expireAfterAccess(3, TimeUnit.MINUTES)
+				.expireAfterAccess(CACHE_EXPIRATION_TIME, TimeUnit.MINUTES)
 				.removalListener(removalListener)
 				.build(loader);
 	}
@@ -167,6 +174,11 @@ public class AvroWriterBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
+		
+		this.debugMode = stormConf.get("debug").equals("true");
+		if (this.debugMode) {
+			LOGGER.info("Debug mode is on, will use replication factor of 1 for HDFS");
+		} 
 		
 		// Load target datasource directories from Storm configuration 
 		try {
