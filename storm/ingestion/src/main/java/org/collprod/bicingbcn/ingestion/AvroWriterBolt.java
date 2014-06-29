@@ -16,8 +16,10 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -155,7 +157,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 					RemovalNotification<DatasourceMonth, DataFileWriter<GenericRecord>> removal) {
 				try {
 					LOGGER.info("Closing file for datasource {}", removal.getKey().datasource());
-					removal.getValue().close();
+					removal.getValue().close();				
 				} catch (IOException ioe) {
 					LOGGER.error("Error closing file for datasource {}: {}", 
 								removal.getKey().datasource(), ioe.getMessage());
@@ -260,9 +262,29 @@ public class AvroWriterBolt extends BaseRichBolt {
 	
 	@Override
 	public void cleanup() {
+		/*
+		 * This method is useless in cluster mode, as stated by Storms documentation
+		 * 
+		 * http://nathanmarz.github.io/storm/doc-0.8.1/backtype/storm/task/IBolt.html#cleanup()
+		 * 
+		 * "Called when an IBolt is going to be shutdown. There is no guarentee that cleanup will be called, 
+		 * because the supervisor kill -9's worker processes on the cluster.
+		 * The one context where cleanup is guaranteed to be called is when a topology is killed when running Storm in local mode."
+		 * */
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
 		// Invalidate all the elements in the DataFileWriter cache. As a result the removal 
 		// listeners will close the corresponding files
 		this.writersCache.invalidateAll();
+		try {
+			this.hdfs.close();
+			LOGGER.info("Closed connection to HDFS");
+		} catch (IOException ioe) {
+			LOGGER.error("Error closing connection to HDFS :" + ioe.getMessage() 
+					+ ", " + ExceptionUtils.getStackTrace(ioe));
+		}
 	}
 
 	@Override

@@ -30,9 +30,12 @@ import backtype.storm.tuple.Fields;
  * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
  * 
  * Run in distributed mode by setting "ingestion.properties:topology.name" to a
- * not empty value and executing:
+ * not empty value and executing the following command. When "topology.name" is 
+ * empty that commands runs in local mode but using storm's libraries, which is 
+ * also different to an eclipse local run
  * 
  * [cloudera@localhost ingestion]$ storm jar target/storm-ingestion-0.0.1-SNAPSHOT.jar org.collprod.bicingbcn.ingestion.IngestionTopology
+ * 
  * */
 public class IngestionTopology {
 	// For running using ${workspace_loc:storm-ingestion/src/main/resources} as working directory
@@ -136,7 +139,7 @@ public class IngestionTopology {
 		conf.put(Config.TOPOLOGY_NAME, topologyName);
 		
 		// add other common fields to conf
-		// FIXME: add a property to ingestionPropertiesPath to turn on and off these stuff  
+		// FIXME: use the debug property for this 
 		conf.setDebug(true);
 		// conf.put(Config.TOPOLOGY_DEBUG, true); // this is not working, this disables even info logs
 
@@ -164,9 +167,7 @@ public class IngestionTopology {
 		@SuppressWarnings("rawtypes")
 		int numDatasources = ((Map) conf.get(IngestionTopology.DATASOURCE_CONF_KEY)).size();
 		LOGGER.info("Found {} different datasources", numDatasources);
-			// FIXME: probably this should be computed as a multiple of a 
-			// a property added to ingestionPropertiesPath. For now use 2 to avoid crushing the VM
-			// FIXME: use an extra dummy datasource and test with 2 datasources
+			// TODO: use a sensible value
 		conf.put(Config.TOPOLOGY_WORKERS, 1);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// Create a Spout instance / task per data source, to handle only that connection
@@ -174,7 +175,8 @@ public class IngestionTopology {
 								 numDatasources);
 		// We use fieldsGrouping so tuples for the same datasource go to the same AvroWriterBolt, which 
 		// opens an HDFS file for the data source and each month. This prevents the situation where two 
-		// different  AvroWriterBolts try to open the same file
+		// different  AvroWriterBolts try to open the same file, which would replay the tuple until it
+		// goes to the AvroWriterBolt which opened the file first
 		// This also implies we need an executor per datasource
 		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
 								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 

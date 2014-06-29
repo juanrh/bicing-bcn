@@ -262,6 +262,19 @@ public class RestIngestionSpout extends BaseRichSpout {
 
 	@Override
 	public void close() {
+		/*
+		 * This method is useless in cluster mode, as stated by Storms documentation
+		 * 
+		 * http://nathanmarz.github.io/storm/doc-0.8.1/backtype/storm/topology/base/BaseRichSpout.html#close()
+		 * 
+		 * "Called when an ISpout is going to be shutdown. There is no guarentee that close will be called, 
+		 * because the supervisor kill -9's worker processes on the cluster.
+		 * The one context where close is guaranteed to be called is a topology is killed when running Storm in local mode."
+		 * */
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
 		this.dbConnection.close();
 		super.close();
 	}

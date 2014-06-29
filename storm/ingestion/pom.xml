@@ -8,6 +8,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>storm-ingestion</name>
+	<!-- mvn dependency:tree -Dverbose  -->
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<version-slf4j>1.7.7</version-slf4j>		
@@ -49,7 +50,7 @@
 			<!--  Storm 0.9.0.1 doesn't work with Hadoop libraries -->
 			<version>0.9.1-incubating</version>
 			<!-- keep storm out of the jar-with-dependencies -->
-			<scope>provided</scope>
+			<!-- <scope>provided</scope> -->
 		</dependency>
 		<!-- Apache commons property files -->
 		<dependency>
@@ -63,24 +64,28 @@
 			<version>2.6</version>
 		</dependency>
 		<!-- Apache HTP for service consumption -->
-		<!--  version 4.3.4 doesn't work with storm 0.9.1-incubating -->
+		<!--  version 4.3.4 doesn't work with storm 0.9.1-incubating 
+		Using 4.3.2 as the jar can be found and be used to replace that in storm lib folder
+		-->
 	  	<dependency>
   			<groupId>org.apache.httpcomponents</groupId>
   			<artifactId>fluent-hc</artifactId>
-  			<version>4.3.3</version>
+  			<!-- <version>4.3.3</version> -->
+  			<version>4.3.2</version>
 		</dependency>
 		<!-- httpclient is needed as an explicit dependency for fluent-hc
 		version 4.3.3, but not for version 4.3.3  --> 
 		<dependency>
     		<groupId>org.apache.httpcomponents</groupId>
     		<artifactId>httpclient</artifactId>
-    		<version>4.3.3</version>
+    		<!-- <version>4.3.3</version> -->
+    		<version>4.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>17.0</version>
-		</dependency>
+				<version>17.0</version> 
+ 		</dependency>
 		<dependency>
       		<groupId>com.google.auto.value</groupId>
       		<artifactId>auto-value</artifactId>
@@ -164,64 +169,19 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
+                     				<resource>defaults.yaml</resource>
+                 				</transformer>
+                 				<!--  To fix problem with META-INFO/services/org.apache.hadoop.fs.FileSystem
+                 				that leads to "No FileSystem for scheme: hdfs"
+                 				 -->
+                 				<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+							</transformers>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			<!-- TODO  delete comments after plugin change consolidation --> 
-			<!-- bind the maven-assembly-plugin to the package phase this will create 
-				a jar file without the storm dependencies suitable for deployment to a cluster. -->				
-			<!-- <plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-					<archive>
-						<manifest>
-							<mainClass></mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>com.theoryinpractise</groupId>
-				<artifactId>clojure-maven-plugin</artifactId>
-				<version>1.3.8</version>
-				<extensions>true</extensions>
-				<configuration>
-					<sourceDirectories>
-						<sourceDirectory>src/clj</sourceDirectory>
-					</sourceDirectories>
-				</configuration>
-				<executions>
-					<execution>
-						<id>compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>test</id>
-						<phase>test</phase>
-						<goals>
-							<goal>test</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			-->
-			
 		</plugins>
 		<pluginManagement>
 			<plugins>
