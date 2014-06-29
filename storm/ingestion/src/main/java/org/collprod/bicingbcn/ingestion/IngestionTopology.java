@@ -34,6 +34,9 @@ import backtype.storm.tuple.Fields;
  * empty that commands runs in local mode but using storm's libraries, which is 
  * also different to an eclipse local run
  * 
+ * NOTE: in distributed mode properties are taken from the jar, so a "mvn clean package" is 
+ * required to refresh the properties before a new execution 
+ * 
  * [cloudera@localhost ingestion]$ storm jar target/storm-ingestion-0.0.1-SNAPSHOT.jar org.collprod.bicingbcn.ingestion.IngestionTopology
  * 
  * */
@@ -178,9 +181,18 @@ public class IngestionTopology {
 		// different  AvroWriterBolts try to open the same file, which would replay the tuple until it
 		// goes to the AvroWriterBolt which opened the file first
 		// This also implies we need an executor per datasource
+		/*
+		 * This is not working in cluster mode because storm doesn't call cleanup on topology kill
+		 * and so the file is not closed properly
 		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
 								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
 																new Fields(RestIngestionSpout.DATASOURCE_ID));
+		*/
+		// Kafka Bolt
+		// No particular routing, local preferred 
+		topologyBuilder.setBolt(KafkaWriterBolt.class.getName(), new KafkaWriterBolt(), numDatasources)
+								.localOrShuffleGrouping(RestIngestionSpout.class.getName());
+		
 								
 		// Launch topology
 		LOGGER.info("Launching topology");

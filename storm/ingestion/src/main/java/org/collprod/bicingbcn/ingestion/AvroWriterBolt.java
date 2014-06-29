@@ -71,7 +71,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 				.endRecord();
 	}
 	/**
-	 * Storm collector to emit tuples
+	 * Storm collector for acking or failing
 	 * */
 	private OutputCollector collector;
 
@@ -227,7 +227,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 		// get datasource
 		String datasource = inputTuple.getStringByField(RestIngestionSpout.DATASOURCE_ID);
 		// compute month
-		long timestamp = inputTuple.getLongByField(TimestampParserBolt.TIMESTAMP_FIELD);
+		long timestamp = inputTuple.getLongByField(RestIngestionSpout.TIMESTAMP_FIELD);
 			// this computation is completely stateless 
 		String month = timestampToMonth(timestamp);
 		

@@ -68,6 +68,7 @@ public class RestIngestionSpout extends BaseRichSpout {
 	public static final String CONTENT_FIELD = "CONTENT_FIELD";  
 	public static final String TIMESTAMP_FIELD = "TIMESTAMP_FIELD";
 	public static final String DATASOURCE_ID = "DATASOURCE_ID"; 
+
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(RestIngestionSpout.class);
 	
