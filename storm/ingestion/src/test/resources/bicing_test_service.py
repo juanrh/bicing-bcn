@@ -22,6 +22,7 @@ class BicingSimResource(resource.Resource):
         for data_file_path in data_files_paths:
             with open(data_file_path, 'r') as data_file:
                 self._files.append(data_file.read())
+        print "Loaded files", data_files_paths
         # -1 to start at 0 in first request
         self._current_file = -1
     
@@ -29,6 +30,7 @@ class BicingSimResource(resource.Resource):
         request.setHeader("content-type", "text/xml")
         now_timestamp = int(time.time())
         self._current_file = (self._current_file + 1) % len(self._files)
+        print "Using file", self._current_file
         return timestamp_re.sub(timestamp_format.format(timestamp = now_timestamp), self._files[self._current_file])
 
 if __name__ == '__main__':
