@@ -1,6 +1,5 @@
 package org.collprod.bicingbcn.ingestion;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -9,24 +8,19 @@ import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericRecord;
-import org.collprod.bicingbcn.ingestion.AvroWriterBolt.DatasourceMonth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.auto.value.AutoValue;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
+
+import com.google.auto.value.AutoValue;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 /**
  * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD) which are sent to Kafka:
@@ -37,8 +31,6 @@ import backtype.storm.tuple.Tuple;
  * Check with 
  [cloudera@localhost kafka_2.10-0.8.1.1]$ bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test_bicing_station_data
  * */
-
-// TODO: si eso ver lo de la cache o algo asi para los timestamps
 
 public class KafkaWriterBolt extends BaseRichBolt {
 
