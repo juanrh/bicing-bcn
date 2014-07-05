@@ -23,7 +23,7 @@ import org.junit.Test;
  * TODO It would be nice studying how to optimize one pass XML parsing by using XmlSaxDataContext
  * */ 
 
-public class MetamodelXmlDomPoC {
+public class MetamodelXmlDomPoCTest {
 	private static final String MODEL_FILE_PATH = "/bicing_2014-05-31_15.53.07_UTC.xml";
 
 	private DataContext bicingData;
