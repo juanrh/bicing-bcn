@@ -92,7 +92,11 @@
     		<artifactId>reflections</artifactId>
     		<version>0.9.9-RC2</version>
 		</dependency>
-		
+		<dependency>
+  			<groupId>org.apache.metamodel</groupId>
+  			<artifactId>MetaModel-full</artifactId>
+  			<version>4.1.0-RC1-incubating</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<resources>

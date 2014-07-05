@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bicing_stations>
+ <updatetime><![CDATA[1401644107]]></updatetime>
+ <station>
+  <id>11</id>
+  <lat>41.3816890</lat>
+  <long>2.19391400</long>
+  <street><![CDATA[Trelawny]]></street>
+  <height>1</height>
+  <streetNumber>2</streetNumber>
+  <nearbyStationList>116,124,125,396</nearbyStationList>
+  <status>OPN</status>
+  <slots>5</slots>
+  <bikes>14</bikes>
+ </station>
+
+ <station>
+  <id>13</id>
+  <lat>41.3868610</lat>
+  <long>2.19576100</long>
+  <street><![CDATA[Avinguda Litoral]]></street>
+  <height>1</height>
+  <streetNumber>16</streetNumber>
+  <nearbyStationList>11,12,46,69</nearbyStationList>
+  <status>OPN</status>
+  <slots>7</slots>
+  <bikes>26</bikes>
+ </station>
+
+ <station>
+  <id>14</id>
+  <lat>41.3848250</lat>
+  <long>2.18507400</long>
+  <street><![CDATA[Avinguda del Marques Argentera]]></street>
+  <height>11</height>
+  <streetNumber>19</streetNumber>
+  <nearbyStationList>9,10,115,389</nearbyStationList>
+  <status>OPN</status>
+  <slots>15</slots>
+  <bikes>6</bikes>
+ </station>
+
+ <station>
+  <id>16</id>
+  <lat>41.3982700</lat>
+  <long>2.18670800</long>
+  <street><![CDATA[Av. Meridiana]]></street>
+  <height>18</height>
+  <streetNumber>47</streetNumber>
+  <nearbyStationList>17,44,48,372</nearbyStationList>
+  <status>OPN</status>
+  <slots>5</slots>
+  <bikes>14</bikes>
+ </station>
+ 
+ <station>
+  <id>511</id>
+  <lat>41.4044180</lat>
+  <long>2.19037900</long>
+  <street><![CDATA[Castella]]></street>
+  <height></height>
+  <streetNumber>48</streetNumber>
+  <nearbyStationList>42,133,286</nearbyStationList>
+  <status>OPN</status>
+  <slots>9</slots>
+  <bikes>0</bikes>
+ </station>
+</bicing_stations>
+

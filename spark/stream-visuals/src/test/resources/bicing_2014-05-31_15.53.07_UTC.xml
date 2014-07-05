@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bicing_stations>
+ <updatetime><![CDATA[1401551587]]></updatetime>
+ <station>
+  <id>1</id>
+  <lat>41.3979520</lat>
+  <long>2.18004200</long>
+  <street><![CDATA[Gran Via Corts Catalanes]]></street>
+  <height>21</height>
+  <streetNumber>760</streetNumber>
+  <nearbyStationList>24,369,387,426</nearbyStationList>
+  <status>OPN</status>
+  <slots>18</slots>
+  <bikes>6</bikes>
+ </station>
+ <station>
+  <id>2</id>
+  <lat>41.3942720</lat>
+  <long>2.17516900</long>
+  <street><![CDATA[Plaza Tetu&aacute;n]]></street>
+  <height>21</height>
+  <streetNumber>8</streetNumber>
+  <nearbyStationList>360,368,387,414</nearbyStationList>
+  <status>OPN</status>
+  <slots>23</slots>
+  <bikes>4</bikes>
+ </station>
+ <station>
+  <id>3</id>
+  <lat>41.3936990</lat>
+  <long>2.18113700</long>
+  <street><![CDATA[Ali Bei]]></street>
+  <height>21</height>
+  <streetNumber>44</streetNumber>
+  <nearbyStationList>4,6,119,419</nearbyStationList>
+  <status>OPN</status>
+  <slots>14</slots>
+  <bikes>11</bikes>
+ </station>
+ </bicing_stations>
+
