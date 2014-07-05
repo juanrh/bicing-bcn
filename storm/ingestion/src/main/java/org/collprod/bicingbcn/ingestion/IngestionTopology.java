@@ -117,7 +117,6 @@ public class IngestionTopology {
 			ingestionConfig.load(new BufferedReader(new InputStreamReader(
 						IngestionTopology.class.getResourceAsStream("/" + DEFAULT_INGESTION_PROPS))));
 			LOGGER.info("main configuration loaded");
-			System.out.println(ingestionConfig.isEmpty());
 			datasourcesConfigurations = loadDatasources(DEFAULT_DATASOURCE_PATH);
 			LOGGER.info("data sources configuration loaded");
 		} catch(ConfigurationException ce) {
