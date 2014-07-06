@@ -2,9 +2,7 @@ package org.collprod.bicingbcn;
 
 import java.io.ByteArrayInputStream;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.ArrayList;
 
 import javax.annotation.Nullable;
 
@@ -20,6 +18,8 @@ import org.xml.sax.InputSource;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -80,9 +80,9 @@ public class BicingStationDao implements Serializable {
 		private static final long serialVersionUID = 8581922474241143038L;
 		
 		Value() {}
-		public static Value create(long updatetime, int id, float latitude,
-				float longitude, String street, int height, int streetNumber,
-				List<Integer> nearbyStationList, String status, int slots,
+		public static Value create(long updatetime, int id, double latitude,
+				double longitude, String street, int height, int streetNumber,
+				ArrayList<Integer> nearbyStationList, String status, int slots,
 				int bikes) {
 	        return new AutoValue_BicingStationDao_Value(updatetime, id, latitude,
 					longitude, street, height, streetNumber, nearbyStationList, status, 
@@ -90,12 +90,14 @@ public class BicingStationDao implements Serializable {
 	      }
 		public abstract long updatetime();
 		public abstract int id();
-		public abstract float latitude();
-		public abstract float longitude();
+		public abstract double latitude();
+		public abstract double longitude();
 		public abstract String street();
 		public abstract int height();
 		public abstract int streetNumber();
-		public abstract List<Integer> nearbyStationList();
+		// NOTE: it's essential to use ArrayList instead of List, otherwise this class
+		// won't be Serializable and thus NotSerializableException when used in Window operations
+		public abstract ArrayList<Integer> nearbyStationList();
 		public abstract String status();
 		public abstract int slots();
 		public abstract int bikes();
@@ -145,6 +147,10 @@ public class BicingStationDao implements Serializable {
 		return this.updatetimeCompiledQuery;
 	}
 	
+	/**
+	 * - If streetNumber is absent (i.e. tag <streetNumber></streetNumber>) then -1 is used for this field
+	 * - If height is absent then 0 is used as default
+	 * */
 	public Iterable<Value> parse(String bicingFileContents) {
 		// Load bicing XML string
 		DataContext bicingData = DataContextFactory.createXmlDataContext(new InputSource(new ByteArrayInputStream(bicingFileContents.getBytes())), 
@@ -160,7 +166,7 @@ public class BicingStationDao implements Serializable {
 
 		// get data for each station, add the update time, and construct the corresponding values
 		DataSet stationsResults = bicingData.executeQuery(this.getStationsQuery(bicingData));
-		Iterable<Value> values = FluentIterable
+		return FluentIterable
 				.from(stationsResults)
 				.transform(new Function<Row, Value>(){
 					@Override
@@ -168,26 +174,27 @@ public class BicingStationDao implements Serializable {
 					public Value apply(@Nullable Row stationsRow) {
 						return Value.create(updateTime, 
 								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.idColumn).toString()),
-								Float.parseFloat(stationsRow.getValue(BicingStationDao.this.latColumn).toString()), 
-								Float.parseFloat(stationsRow.getValue(BicingStationDao.this.longColumn).toString()),
+								Double.parseDouble(stationsRow.getValue(BicingStationDao.this.latColumn).toString()), 
+								Double.parseDouble(stationsRow.getValue(BicingStationDao.this.longColumn).toString()),
 								stationsRow.getValue(BicingStationDao.this.streetColumn).toString(),
-								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.heightColumn).toString()),
-								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.streetNumberColumn).toString()),
-								// Arrays.asList(0),
-								Lists.transform(Lists.newArrayList(stationsRow.getValue(BicingStationDao.this.nearbyStationListColumn).toString().split(",")), 
+								Integer.parseInt(Optional.fromNullable(stationsRow.getValue(BicingStationDao.this.heightColumn))
+										 .or("0").toString()),
+								Integer.parseInt(Optional.fromNullable(stationsRow.getValue(BicingStationDao.this.streetNumberColumn))
+														 .or("-1").toString()),
+								Lists.newArrayList(Iterables.transform(
+										Splitter.on(",").split(stationsRow.getValue(BicingStationDao.this.nearbyStationListColumn).toString()), 
 										new Function<String, Integer>() {
-									@Override
-									@Nullable
-									public Integer apply(@Nullable String intStr) {
-										return Integer.parseInt(intStr);
-									}
-								}),
+											@Override
+											@Nullable
+											public Integer apply(@Nullable String intStr) {
+												return Integer.parseInt(intStr);
+											}
+								})),
 								stationsRow.getValue(BicingStationDao.this.statusColumn).toString(),
 								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.slotsColumn).toString()),
 								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.bikesColumn).toString())
 								);
 					}});
 		// note stationsResult is not closed		
-		return values;
 	}
 }
