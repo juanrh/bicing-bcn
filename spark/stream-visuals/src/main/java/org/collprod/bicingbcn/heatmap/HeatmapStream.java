@@ -41,6 +41,10 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
+/*
+ * TODO: no need to use a window, as we just need the last value of the batch RDD ==> change as that has a 
+ * huge impact in the performance
+ * */
 // See https://github.com/apache/spark/blob/master/examples/src/main/scala/org/apache/spark/examples/streaming/KafkaWordCount.scala
 public class HeatmapStream {
 	// TODO use config
@@ -276,6 +280,11 @@ public class HeatmapStream {
 			}
 		});
 		
+		/*
+		 * TODO: no need to use a window, as we just need the last value of the batch RDD ==> change as that has a 
+		 * huge impact in the performance
+		 * */
+
 		// Get just last status in the window
 		// TODO: change durations to 60000 and 30000
 		JavaPairDStream<Integer, BicingStationDao.Value> lastStatePairs = idStatePairs.reduceByKeyAndWindow(new Function2<BicingStationDao.Value, BicingStationDao.Value, BicingStationDao.Value>() {
