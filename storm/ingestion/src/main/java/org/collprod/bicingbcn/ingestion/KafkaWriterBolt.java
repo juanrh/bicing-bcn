@@ -55,7 +55,7 @@ public class KafkaWriterBolt extends BaseRichBolt {
 	/**
 	 * Cache representing the set of timestamps seen lately
 	 * */
-	LoadingCache<DatasourceTimestamp, Boolean> timestampSeen;
+	private LoadingCache<DatasourceTimestamp, Boolean> timestampSeen;
 	
 	@AutoValue
 	static abstract class DatasourceTimestamp {
@@ -71,7 +71,7 @@ public class KafkaWriterBolt extends BaseRichBolt {
 	 * To represent the set of the last seen timestamps, we use a cache from Long to Boolean (to use something),
 	 * so being a key in the cache is equivalent to appearing in the set  
 	 * */
-	private LoadingCache<DatasourceTimestamp, Boolean> createSeenTimestampsSetCache() {
+	private LoadingCache<DatasourceTimestamp, Boolean> buildSeenTimestampsSetCache() {
 		CacheLoader<DatasourceTimestamp, Boolean> loader = 
 				new CacheLoader<DatasourceTimestamp, Boolean> () {
 					@Override
@@ -102,7 +102,7 @@ public class KafkaWriterBolt extends BaseRichBolt {
 			}
 		}
 		this.kafkaProducer = new Producer<String, String>(new ProducerConfig(kafkaProperties));
-		this.timestampSeen = createSeenTimestampsSetCache();
+		this.timestampSeen = buildSeenTimestampsSetCache();
 	}
 	
 	@Override

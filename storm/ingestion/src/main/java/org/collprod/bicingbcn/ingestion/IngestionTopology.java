@@ -181,7 +181,19 @@ public class IngestionTopology {
 		topologyBuilder.setBolt(KafkaWriterBolt.class.getName(), new KafkaWriterBolt(), numDatasources)
 								.localOrShuffleGrouping(RestIngestionSpout.class.getName());
 		
-								
+		// HBase Bolt
+		/*
+		 * Tuples are written to an HBase table named after its datasource. Although there is no problem 
+		 * if two bolts connect to the same table, by using fieldsGrouping we avoid that all the bolts
+		 * connect to all the tables, so each bolt specializes in a set of datasources and tables
+		 * */
+		// FIXME: this bolt works correclty, but its disabled for testing to avoid saturation of the VM 
+		/*
+		topologyBuilder.setBolt(HBaseWriterBolt.class.getName(), new HBaseWriterBolt(),
+								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
+													new Fields(RestIngestionSpout.DATASOURCE_ID));
+		*/
+		
 		// Launch topology
 		LOGGER.info("Launching topology");
 		if(! conf.get(Config.TOPOLOGY_NAME).equals(LOCAL_TOPOLOGY_NAME)) {

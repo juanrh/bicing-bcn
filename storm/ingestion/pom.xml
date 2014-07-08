@@ -137,6 +137,32 @@
 				</exclusions>
   		</dependency> 
   		<dependency>
+    		<groupId>org.apache.hbase</groupId>
+    		<artifactId>hbase</artifactId>
+     		<version>0.94.6-cdh4.4.0</version>
+    			<exclusions>
+					<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+					</exclusion>
+				</exclusions>
+  		</dependency> 
+  		
+  		<!-- Need for HBase client to avoid java.lang.ClassNotFoundException: 
+  		org.apache.zookeeper.server.NIOServerCnxn$Factory 
+  		http://stackoverflow.com/questions/19958635/classnotfoundexception-for-zookeeper-while-building-storm -->
+  		<dependency>
+			<groupId>org.apache.zookeeper</groupId>
+			<artifactId>zookeeper</artifactId>
+			<version>3.3.6</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+  		</dependency>	
+  		<dependency>
     		<groupId>org.reflections</groupId>
     		<artifactId>reflections</artifactId>
     		<version>0.9.9-RC2</version>
