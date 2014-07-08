@@ -175,18 +175,7 @@ public class IngestionTopology {
 		// Create a Spout instance / task per data source, to handle only that connection
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
 								 numDatasources);
-		// We use fieldsGrouping so tuples for the same datasource go to the same AvroWriterBolt, which 
-		// opens an HDFS file for the data source and each month. This prevents the situation where two 
-		// different  AvroWriterBolts try to open the same file, which would replay the tuple until it
-		// goes to the AvroWriterBolt which opened the file first
-		// This also implies we need an executor per datasource
-		/*
-		 * This is not working in cluster mode because storm doesn't call cleanup on topology kill
-		 * and so the file is not closed properly
-		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
-								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
-																new Fields(RestIngestionSpout.DATASOURCE_ID));
-		*/
+
 		// Kafka Bolt
 		// No particular routing, local preferred 
 		topologyBuilder.setBolt(KafkaWriterBolt.class.getName(), new KafkaWriterBolt(), numDatasources)

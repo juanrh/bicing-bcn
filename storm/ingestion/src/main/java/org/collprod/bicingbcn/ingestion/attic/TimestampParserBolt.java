@@ -1,4 +1,4 @@
-package org.collprod.bicingbcn.ingestion;
+package org.collprod.bicingbcn.ingestion.attic;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,6 +6,8 @@ import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.mutable.MutableLong;
+import org.collprod.bicingbcn.ingestion.IngestionTopology;
+import org.collprod.bicingbcn.ingestion.RestIngestionSpout;
 import org.collprod.bicingbcn.ingestion.tsparser.TimeStampParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

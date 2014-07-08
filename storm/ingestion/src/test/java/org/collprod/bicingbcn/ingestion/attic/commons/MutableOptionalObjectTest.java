@@ -1,7 +1,9 @@
-package org.collprod.bicingbcn.ingestion.commons;
+package org.collprod.bicingbcn.ingestion.attic.commons;
 
 import junit.framework.Assert;
 
+import org.collprod.bicingbcn.ingestion.attic.commons.MutableObject;
+import org.collprod.bicingbcn.ingestion.attic.commons.MutableOptionalObject;
 import org.collprod.bicingbcn.ingestion.tsparser.BicingBCNTimeStampParser;
 import org.junit.After;
 import org.junit.Before;

@@ -15,6 +15,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.collprod.bicingbcn.ingestion.attic.AvroWriterBolt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

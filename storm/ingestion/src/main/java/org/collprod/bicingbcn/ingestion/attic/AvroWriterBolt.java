@@ -1,4 +1,4 @@
-package org.collprod.bicingbcn.ingestion;
+package org.collprod.bicingbcn.ingestion.attic;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,12 +16,13 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.collprod.bicingbcn.ingestion.IngestionTopology;
+import org.collprod.bicingbcn.ingestion.RestIngestionSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +93,7 @@ public class AvroWriterBolt extends BaseRichBolt {
 	private LoadingCache<DatasourceMonth, DataFileWriter<GenericRecord>> writersCache;
 
 	@AutoValue
-	static abstract class DatasourceMonth {
+	public static abstract class DatasourceMonth {
 		DatasourceMonth() {}
 		public static DatasourceMonth create(String datasource, String month) {
 			return new AutoValue_AvroWriterBolt_DatasourceMonth(datasource, month);
@@ -287,6 +288,28 @@ public class AvroWriterBolt extends BaseRichBolt {
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		// this bolts emits no tuples, just stores in HDFS
+	}
+	
+	public static void main (String [] args) {
+		/* This is how this bolt would be used in the topology if it worked ok
+		The problem is not only that storm doesn't call cleanup on topology kill, the 
+		problem is that for this bolt to work without corrupting data it should run
+		continuously during a whole month per each file, and that leads to an 
+		incredibly bad fault tolerance    		
+		*/
+		
+		// We use fieldsGrouping so tuples for the same datasource go to the same AvroWriterBolt, which 
+		// opens an HDFS file for the data source and each month. This prevents the situation where two 
+		// different  AvroWriterBolts try to open the same file, which would replay the tuple until it
+		// goes to the AvroWriterBolt which opened the file first
+		// This also implies we need an executor per datasource
+		/*
+		 * This is not working in cluster mode because storm doesn't call cleanup on topology kill
+		 * and so the file is not closed properly
+		topologyBuilder.setBolt(AvroWriterBolt.class.getName(), new AvroWriterBolt(),
+								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
+																new Fields(RestIngestionSpout.DATASOURCE_ID));
+		*/
 	}
 
 }

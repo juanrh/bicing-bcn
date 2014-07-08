@@ -1,4 +1,4 @@
-package org.collprod.bicingbcn.ingestion.commons;
+package org.collprod.bicingbcn.ingestion.attic.commons;
 
 import java.io.Serializable;
 

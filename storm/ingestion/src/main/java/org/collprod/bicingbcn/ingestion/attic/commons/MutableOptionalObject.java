@@ -1,4 +1,4 @@
-package org.collprod.bicingbcn.ingestion.commons;
+package org.collprod.bicingbcn.ingestion.attic.commons;
 
 import com.google.common.base.Optional;
 
@@ -58,34 +58,5 @@ public class MutableOptionalObject<V> extends MutableObject<Optional<V>> {
 		return "MutableOptionalObject{"
 				+ "value=" + this.get()
 				+ "}";
-	}
-	
-	public static void main (String [] a) {
-		MutableOptionalObject<String> mutableString = new MutableOptionalObject<String>();
-		System.out.println(mutableString);
-		mutableString.set(Optional.of("hola"));
-		System.out.println(mutableString);
-		mutableString.setPresentValue("adios");
-		System.out.println(mutableString);
-		mutableString.setAbsent();
-		System.out.println(mutableString);
-		mutableString.setPresentValue("ey");
-		System.out.println(mutableString);
-		
-		mutableString = new MutableOptionalObject<String>("hola");
-		System.out.println(mutableString);
-		
-		Optional<String> absentString = Optional.absent();
-		mutableString = new MutableOptionalObject<String>(absentString);
-		System.out.println(mutableString);
-		
-		mutableString = new MutableOptionalObject<String>(Optional.of("hola"));
-		System.out.println(mutableString);
-	
-		mutableString = new MutableOptionalObject<String>(Optional.of("hola"));
-		System.out.println(mutableString.equals(new MutableObject<String>("hola")));
-		
-
-		
 	}
 }

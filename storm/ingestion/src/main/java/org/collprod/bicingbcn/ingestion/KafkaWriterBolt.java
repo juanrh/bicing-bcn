@@ -8,6 +8,7 @@ import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 
+import org.collprod.bicingbcn.ingestion.attic.AvroWriterBolt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
