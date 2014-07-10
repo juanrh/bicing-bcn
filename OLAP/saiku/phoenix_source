@@ -1,0 +1,4 @@
+type=OLAP
+name=phoenix
+driver=mondrian.olap4j.MondrianOlap4jDriver
+location=jdbc:mondrian:Jdbc=jdbc:phoenix:localhost;Catalog=res:phoenix/Phoenix.xml;JdbcDrivers=org.apache.phoenix.jdbc.PhoenixDriver

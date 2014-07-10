@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# TODO: installer for Apache Phoenix client, and server
+#  [cloudera@localhost phoenix3]$ sudo cp -r phoenix-3.0.0-incubating /usr/lib/bicingbcn/
+# TODO: Spark
+# TODO: Storm
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source ${SCRIPT_DIR}/config.sh
 

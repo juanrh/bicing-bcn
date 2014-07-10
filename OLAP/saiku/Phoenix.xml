@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<Schema name="Phoenix">
+  <Cube name="PERFORMANCE_100000_PROC">
+    <Table name="PERFORMANCE_100000_PROC"/>
+    <Dimension name="HOST">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="HOST" column="HOST" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="DOMAIN">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="DOMAIN" column="DOMAIN" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="FEATURE">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="FEATURE" column="FEATURE" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="DATE">
+       <Hierarchy hasAll="true" allMemberName="All Types">
+         <Level name="DAY" column="DATE_DAY" uniqueMembers="false"/>
+       </Hierarchy>
+    </Dimension>
+    <Measure name="CORE" column="CORE" aggregator="sum" formatString="Standard"/>
+    <Measure name="DB" column="DB" aggregator="sum" formatString="Standard"/>
+    <Measure name="ACTIVE_VISITOR" column="ACTIVE_VISITOR" aggregator="sum" formatString="Standard"/>
+  </Cube>
+
+  <Cube name="PERFORMANCE_1000000_PROC">
+    <Table name="PERFORMANCE_1000000_PROC"/>
+    <Dimension name="HOST">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="HOST" column="HOST" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="DOMAIN">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="DOMAIN" column="DOMAIN" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="FEATURE">
+      <Hierarchy hasAll="true" allMemberName="All Types">
+        <Level name="FEATURE" column="FEATURE" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="DATE">
+       <Hierarchy hasAll="true" allMemberName="All Types">
+         <Level name="DAY" column="DATE_DAY" uniqueMembers="false"/>
+       </Hierarchy>
+    </Dimension>
+    <Measure name="CORE" column="CORE" aggregator="sum" formatString="Standard"/>
+    <Measure name="DB" column="DB" aggregator="sum" formatString="Standard"/>
+    <Measure name="ACTIVE_VISITOR" column="ACTIVE_VISITOR" aggregator="sum" formatString="Standard"/>
+  </Cube>
+</Schema>
