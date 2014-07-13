@@ -104,25 +104,8 @@ def parse_bicing_stations_from_file(path=default_bicing_file):
         # updatetime = root[0].text
         return (station_element_to_dict(station_element) for station_element in root[1:])
 
-
-
-# def _getDistrictInfo():
-#     bcn_districts_page = wikipedia.page(wikipedia.search("Districtes i barris de Barcelona")[0])
-#     bcn_districts_soup = BeautifulSoup(bcn_districts_page.html())
-#     district_info_table = bcn_districts_soup.find("table", { "class" : "bellataula"})
-
-#     return bcn_districts_page.html()
-
-
-
-
-
-
-
-
-
 # Assuming Wikipedia results for Barcelona wikin Català will be more accurate
-# this is fundamental for the assumptions made for using BeautifulSoup
+# NOTE: this is fundamental for the assumptions made for using BeautifulSoup
 wikipedia.set_lang('ca')
 
 def enrich_stations(station):
@@ -131,6 +114,20 @@ def enrich_stations(station):
 _postalcode_re = re.compile('.* (?P<postalcode>\d+) Barcelona, Spain')
 _size_soup_re = re.compile("\s*(?P<size>\d+,\d+)")
 _population_and_density_soup_re = re.compile("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)")
+
+# according to the name currenly used in wikipedia
+_district_to_neighbourhoods = {
+    "Ciutat Vella de Barcelona" : ['La Barceloneta', 'el Gòtic', 'el Raval', 'Sant Pere, Santa Caterina i la Ribera'], 
+    "Eixample de Barcelona" : ["L'Antiga Esquerra de l'Eixample", "la Nova Esquerra de l'Eixample", "Dreta de l'Eixample", 'Fort Pienc', 'Barri de la Sagrada Família', 'Sant Antoni (Eixample)'],
+    "Sants-Montjuïc" : ['La Bordeta (Sants-Montjuïc)', 'la Font de la Guatlla', 'Hostafrancs', 'La Marina de Port', 'La Marina del Prat Vermell', 'El Poble-sec (Sants-Montjuïc)', 'Sants', 'Sants-Badal', 'Montjuïc (Barcelona)', 'Zona Franca - Port'], 
+    "Les Corts" : ['Barri de les Corts', 'La Maternitat i Sant Ramon', 'Pedralbes'], 
+    "Sarrià - Sant Gervasi" : ['El Putget i Farró', 'Sarrià (Barcelona)', 'Sant Gervasi - la Bonanova', 'Sant Gervasi - Galvany', 'Les Tres Torres', 'Vallvidrera, el Tibidabo i les Planes'], 
+    "Gràcia" : ['Vila de Gràcia', "Camp d'en Grassot i Gràcia Nova", 'La Salut', 'El Coll', 'Vallcarca i els Penitents'], 
+    "Horta-Guinardó" : ['El Baix Guinardó', 'El Guinardó', 'Can Baró', 'El Carmel', "La Font d'en Fargues", "Barri d'Horta", 'La Clota', 'Montbau', 'Sant Genís dels Agudells', 'La Teixonera', "La Vall d'Hebron"], 
+    "Nou Barris" : ['Can Peguera', 'Canyelles (Nou Barris)', 'Ciutat Meridiana', 'La Guineueta', 'Porta (Nou Barris)', 'La Prosperitat', 'Les Roquetes (Nou Barris)', ' Torre Baró', 'La Trinitat Nova', 'El Turó de la Peira', 'Vallbona (Nou Barris)', 'Verdum (Nou Barris)', 'Vilapicina i la Torre Llobeta'], 
+    "Districte de Sant Andreu" : ['Baró de Viver', 'Bon Pastor (Sant Andreu)', 'el Congrés i els Indians', 'Navas', 'Sant Andreu de Palomar', 'La Sagrera', 'Trinitat Vella'], 
+    "Districte de Sant Martí" : ['El Besós i el Maresme', 'El Clot', "Wl Camp de l'Arpa del Clot", 'Diagonal Mar i el Front Marítim del Poblenou', 'El Parc i la Llacuna del Poblenou', 'Poblenou', 'Provençals del Poblenou', 'Sant Martí de Provençals', 'La Verneda i la Pau', 'La Vila Olímpica del Poblenou']}
+
 def enrich_station(station):
     '''
     :param station: dictionary in the format returned by station_element_to_dict(), i.e., from string to string with the keys the tag of the children of a station element and the values the text for that child elements
@@ -139,7 +136,9 @@ def enrich_station(station):
     '''
     def get_geo_info(station):
         '''
-        FIXME: some stations get None for district and neighborhood, maybe could be fixed by some algortithm that moves the point around until some non None result is obtained for both
+        FIXME: some stations get None for district and neighborhood, maybe could be fixed by some algortithm that moves the point around until some non None result is obtained for both. See wikipedia also approach above
+
+        TODO: the wikipedia approach could be improved by replacing exact matching by approximate matching, maybe with NLTK
         '''
         longitude, latitude = float(station['long']), float(station['lat'])
         # reverse geocoding
@@ -208,38 +207,6 @@ def enrich_station(station):
     sys.stderr.write('station ' + station['id'] + " updated : " + str(station) + "\n"*2)
 
     return station
-
-'''
-
-district = "Eixample"
-page_name = wikipedia.search(district + " Barcelona")[0]
-try:
-    page = wikipedia.page(page_name)
-except wikipedia.exceptions.DisambiguationError as de:
-    # FIXME: very simple heuristic
-    page = wikipedia.page(de.options[0])
-soup = BeautifulSoup(page.html())
-soup.find_all(href="/wiki/Superf%C3%ADcie")
-(soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0]
-list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1]
-
-# size
->>> list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1].text
-u' 7,48 km\xb2\n'
-## both total population and densition
->>> list((soup.find_all(href="/wiki/Poblaci%C3%B3") + soup.find_all(title="Població"))[0].parent.parent.children)[-1].text
-u' 266,874 hab. 35.678,34 hab/km\xb2\n'
-
->>> re.match("\s*(?P<size>\d+,\d+)", list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1].text).groupdict()
-{'size': u'7,48'}
-
->>> re.match("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)", u' 266,874 hab. 35.678,34 hab/km\xb2\n').groupdict()
-{'population': u'266,874', 'density': u'35.678,34'}
-
-get_geo_info for station 1: {'postalcode': '08013', 'neighborhood': u'El Fort Pienc', 'district': u'Eixample'}
-
-'''
-
     
 if __name__ == '__main__':
     stations = parse_bicing_stations_from_file()
