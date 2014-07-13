@@ -42,6 +42,7 @@ from bs4 import BeautifulSoup
 
 script_dir = os.path.realpath(os.path.dirname(__file__))
 default_bicing_file = os.path.join(script_dir, "bicing_2014-05-31_15.53.07_UTC.xml")
+default_trg_file = os.path.join(script_dir, os.path.splitext(os.path.basename(__file__))[0] + ".sql")
 
 def lxml_tests():
     with open(path, 'r') as in_f:
@@ -108,9 +109,6 @@ def parse_bicing_stations_from_file(path=default_bicing_file):
 # NOTE: this is fundamental for the assumptions made for using BeautifulSoup
 wikipedia.set_lang('ca')
 
-def enrich_stations(station):
-    return (enrich_station(station) for station in stations)
-
 _postalcode_re = re.compile('.* (?P<postalcode>\d+) Barcelona, Spain')
 _size_soup_re = re.compile("\s*(?P<size>\d+,\d+)")
 _population_and_density_soup_re = re.compile("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)")
@@ -135,7 +133,9 @@ def enrich_station(station):
     '''
     :param station: dictionary in the format returned by station_element_to_dict(), i.e., from string to string with the keys the tag of the children of a station element and the values the text for that child elements
 
-    .retuns TODO the dictionary enriched with additional info
+    :returns a dictionary enriched with additional information for neighborhood, district, postal code, population as number of inhabitants, population density as inhabitants per km2, and size as km2. Example: 
+
+    {'status': 'OPN', 'neighborhood': u'El Fort Pienc', 'district': u'Eixample', 'density': '35678.34', 'bikes': '6', 'long': '2.18004200', 'height': '21', 'postalcode': '08013', 'street': 'Gran Via Corts Catalanes', 'nearbyStationList': '24,369,387,426', 'streetNumber': '760', 'address': 'Gran Via Corts Catalanes 760', 'lat': '41.3979520', 'slots': '18', 'size': '7.48', 'id': '1', 'population': 266874L}
     '''
     def get_geo_info(station):
         '''
@@ -158,6 +158,7 @@ def enrich_station(station):
                 break
 
         # try with wikipedia if needed
+        wikipedia_places = None
             # try by neighborhood
         if neighborhood == None:
             wikipedia_places = wikipedia.geosearch(latitude, longitude)
@@ -201,7 +202,8 @@ def enrich_station(station):
                 # assume everything is fine and otherwise assume we know nothing
                 soup_result = list((soup.find_all(href="/wiki/Poblaci%C3%B3") + soup.find_all(title="Població"))[0].parent.parent.children)[-1].text
                 population_and_density_dict = _population_and_density_soup_re.match(soup_result).groupdict()
-                population = normalize_float_string(population_and_density_dict["population"])
+                    # this is the result of an incoherent nomenclature in wikipedia
+                population = long(population_and_density_dict["population"].replace(",", ""))
                 density = normalize_float_string(population_and_density_dict["density"])
             except:
                 population, density = None, None
@@ -223,28 +225,55 @@ def enrich_station(station):
 
     station.update(get_geo_info(station))
     station.update(get_wikipedia_info(station["district"]))
-
+    station["address"] = ""
+    if (station["street"] != None):
+        station["address"] += station["street"]
+        if (station["streetNumber"] != None):
+            station["address"] +=  " " + station["streetNumber"] 
     sys.stderr.write('station ' + station['id'] + " updated : " + str(station) + "\n"*2)
 
     return station
     
+def enriched_station_to_upserts(station):
+    '''
+    :param station: dictionary of station data as that returned by enrich_station(). For example:
+
+    {'status': 'OPN', 'neighborhood': u'El Fort Pienc', 'district': u'Eixample', 'density': '35678.34', 'bikes': '6', 'long': '2.18004200', 'height': '21', 'postalcode': '08013', 'street': 'Gran Via Corts Catalanes', 'nearbyStationList': '24,369,387,426', 'streetNumber': '760', 'address': 'Gran Via Corts Catalanes 760', 'lat': '41.3979520', 'slots': '18', 'size': '7.48', 'id': '1', 'population': 266874L}
+
+    :returns an string corresponding to a valid UPSERT statement for the following Apache Phoenix table 
+
+        CREATE TABLE IF NOT EXISTS BICING_DIM_STATION (
+            ID UNSIGNED_LONG NOT NULL,
+            GEO.LONGITUDE UNSIGNED_DOUBLE,
+            GEO.LATITUDE UNSIGNED_DOUBLE,
+            GEO.HEIGH UNSIGNED_LONG,
+            LOC.DISTRICT VARCHAR,
+            LOC.NEIGHBORHOOD VARCHAR,
+            LOC.POSTAL_CODE VARCHAR,
+            LOC.ADDRESS VARCHAR,
+            DISTRICT.POP_DENSITY UNSIGNED_DOUBLE,
+            DISTRICT.POPULATION UNSIGNED_LONG,
+            DISTRICT.SIZE UNSIGNED_DOUBLE
+            -- 
+            CONSTRAINT PK PRIMARY KEY (ID)
+        );
+
+    UPSERT INTO BICING_DIM_STATION VALUES (1, 2.18004200, 41.3979520, 21, 'Eixample', 'El Fort Pienc', '08013', 'Gran Via Corts Catalanes 760', 35678.34, 266874, 7.48);
+    '''
+    # d = { k : v if (v != None) else "NULL" for k, v in station.iteritems()}
+    # d["population"] = str(d["population"])
+    # d["address"] = d["address"].encode('utf-8')
+    d = { k : unicode(v).replace("'", '"').encode('utf-8') if (v != None) else "NULL" for k, v in station.iteritems()}
+    return '''UPSERT INTO BICING_DIM_STATION
+VALUES ({id}, {long}, {lat}, {height}, '{district}', '{neighborhood}', '{postalcode}', '{address}', {density}, {population}, {size});'''.format(**d)
+
+def enrich_stations(stations):
+    return (enrich_station(station) for station in stations)
+
+def raw_stations_to_upserts(stations):
+    return (enriched_station_to_upserts(enrich_station(station)) for station in stations)
+
 if __name__ == '__main__':
-    stations = parse_bicing_stations_from_file()
-    # stations_list = list(stations)
-    # print stations_list[9]
-    # print enrich_station(stations_list[9])
-
-    print ("\n"*2).join(map(str, list(enrich_stations(stations))))
-
-    # print ("\n"*2).join(map(str,parse_bicing_stations_from_file()))
-
-    # get_geo_info for station 10: {'postalcode': '08003', 'neighborhood': None, 'district': None}
-
-    # print _getDistrictInfo()
-
-'''
-
->>> print Geocoder.geocode('Carrer del Comerç 27, Barcelona, Spain')
-Carrer del Comerç, 27, 08003 Barcelona, Spain
-
-'''
+    with open(default_trg_file, 'w') as out_f:
+        for station in parse_bicing_stations_from_file():
+            out_f.write(enriched_station_to_upserts(enrich_station(station)) + os.linesep)
