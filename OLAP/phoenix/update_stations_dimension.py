@@ -28,12 +28,17 @@ For python 2.7 installed from sources in CentOS 6 (http://stackoverflow.com/ques
         - Installation:
 (py27env)[cloudera@localhost phoenix]$ sudo pip2.7 install wikipedia
 
+    * BeautifulSoup
+        - Site: http://www.crummy.com/software/BeautifulSoup/, see tutorial from http://adesquared.wordpress.com/2013/06/16/using-python-beautifulsoup-to-scrape-a-wikipedia-table/
+        - Installation: 
+(py27env)[cloudera@localhost phoenix]$ sudo pip2.7 install beautifulsoup4
 '''
 
 import os, re, sys
 from lxml import etree
 from pygeocoder import Geocoder
 import wikipedia
+from bs4 import BeautifulSoup
 
 script_dir = os.path.realpath(os.path.dirname(__file__))
 default_bicing_file = os.path.join(script_dir, "bicing_2014-05-31_15.53.07_UTC.xml")
@@ -99,18 +104,33 @@ def parse_bicing_stations_from_file(path=default_bicing_file):
         # updatetime = root[0].text
         return (station_element_to_dict(station_element) for station_element in root[1:])
 
+
+
+# def _getDistrictInfo():
+#     bcn_districts_page = wikipedia.page(wikipedia.search("Districtes i barris de Barcelona")[0])
+#     bcn_districts_soup = BeautifulSoup(bcn_districts_page.html())
+#     district_info_table = bcn_districts_soup.find("table", { "class" : "bellataula"})
+
+#     return bcn_districts_page.html()
+
+
+
+
+
+
+
+
+
 # Assuming Wikipedia results for Barcelona wikin Català will be more accurate
+# this is fundamental for the assumptions made for using BeautifulSoup
 wikipedia.set_lang('ca')
-
-def _getDistrictInfo():
-    bcn_district_page = wikipedia.page(wikipedia.search("Districtes i barris de Barcelona")[0])
-    return bcn_district_page.html()
-
 
 def enrich_stations(station):
     return (enrich_station(station) for station in stations)
 
 _postalcode_re = re.compile('.* (?P<postalcode>\d+) Barcelona, Spain')
+_size_soup_re = re.compile("\s*(?P<size>\d+,\d+)")
+_population_and_density_soup_re = re.compile("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)")
 def enrich_station(station):
     '''
     :param station: dictionary in the format returned by station_element_to_dict(), i.e., from string to string with the keys the tag of the children of a station element and the values the text for that child elements
@@ -136,28 +156,89 @@ def enrich_station(station):
                 break
         geo_info = {"district" : district, "neighborhood" : neighborhood, "postalcode" : postalcode}
 
-        sys.stderr.write('get_geo_info for station ' + station['id'] + ": " + str(geo_info) + "\n")
         return geo_info
+
+    def normalize_float_string(fstr):
+        return str(float(fstr.replace(".", "").replace(",", ".")))
 
     def get_wikipedia_info(district):
         '''
         :param district: district name as computed by get_geo_info
         '''
+        if district == None:
+            return {"size" : None, "population" : None, "density" : None}
+
+        def get_wikipedia_info_for_page(page):
+            soup = BeautifulSoup(page.html())
+            try: 
+                # instead of some defensive mechanism that will only get partial coverage, 
+                # assume everything is fine and otherwise assume we know nothing
+                soup_result = list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1].text
+                size = normalize_float_string(_size_soup_re.match(soup_result).groupdict()['size'])
+            except:
+                size = None
+            try: 
+                # instead of some defensive mechanism that will only get partial coverage, 
+                # assume everything is fine and otherwise assume we know nothing
+                soup_result = list((soup.find_all(href="/wiki/Poblaci%C3%B3") + soup.find_all(title="Població"))[0].parent.parent.children)[-1].text
+                population_and_density_dict = _population_and_density_soup_re.match(soup_result).groupdict()
+                population = normalize_float_string(population_and_density_dict["population"])
+                density = normalize_float_string(population_and_density_dict["density"])
+            except:
+                population, density = None, None
+
+            return {"size" : size, "population" : population, "density" : density}
+
         # adding "Barcelona to help with disambiguation"
-        page_name = wikipedia.search(district + " Barcelona")[0]
-        try:
-            page = wikipedia.page(page_name)
-        except wikipedia.exceptions.DisambiguationError as de:
-            # FIXME: very simple heuristic
-            page = wikipedia.page(de.options[0])
+        for page_name in wikipedia.search(district + " Barcelona"):
+            try:
+                page = wikipedia.page(page_name, auto_suggest=False)
+            except wikipedia.exceptions.DisambiguationError as de:
+                # FIXME: very simple heuristic
+                page = wikipedia.page(de.options[0])
+            info = get_wikipedia_info_for_page(page)
+            if (info["size"] != None and info["population"] != None and info["density"] != None):
+                return info
 
+        return {"size" : None, "population" : None, "density" : None}
 
-    '''
+    station.update(get_geo_info(station))
+    station.update(get_wikipedia_info(station["district"]))
+
+    sys.stderr.write('station ' + station['id'] + " updated : " + str(station) + "\n"*2)
+
+    return station
+
+'''
+
+district = "Eixample"
+page_name = wikipedia.search(district + " Barcelona")[0]
+try:
+    page = wikipedia.page(page_name)
+except wikipedia.exceptions.DisambiguationError as de:
+    # FIXME: very simple heuristic
+    page = wikipedia.page(de.options[0])
+soup = BeautifulSoup(page.html())
+soup.find_all(href="/wiki/Superf%C3%ADcie")
+(soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0]
+list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1]
+
+# size
+>>> list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1].text
+u' 7,48 km\xb2\n'
+## both total population and densition
+>>> list((soup.find_all(href="/wiki/Poblaci%C3%B3") + soup.find_all(title="Població"))[0].parent.parent.children)[-1].text
+u' 266,874 hab. 35.678,34 hab/km\xb2\n'
+
+>>> re.match("\s*(?P<size>\d+,\d+)", list((soup.find_all(href="/wiki/Superf%C3%ADcie") + soup.find_all(title="Superfície"))[0].parent.parent.children)[-1].text).groupdict()
+{'size': u'7,48'}
+
+>>> re.match("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)", u' 266,874 hab. 35.678,34 hab/km\xb2\n').groupdict()
+{'population': u'266,874', 'density': u'35.678,34'}
+
 get_geo_info for station 1: {'postalcode': '08013', 'neighborhood': u'El Fort Pienc', 'district': u'Eixample'}
 
-    '''
-
-    return get_geo_info(station)
+'''
 
     
 if __name__ == '__main__':
@@ -166,13 +247,13 @@ if __name__ == '__main__':
     # print stations_list[9]
     # print enrich_station(stations_list[9])
 
-    # print ("\n"*2).join(map(str, list(enrich_stations(stations))))
+    print ("\n"*2).join(map(str, list(enrich_stations(stations))))
 
     # print ("\n"*2).join(map(str,parse_bicing_stations_from_file()))
 
     # get_geo_info for station 10: {'postalcode': '08003', 'neighborhood': None, 'district': None}
 
-    print _getDistrictInfo()
+    # print _getDistrictInfo()
 
 '''
 
