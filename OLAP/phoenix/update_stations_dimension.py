@@ -116,17 +116,20 @@ _size_soup_re = re.compile("\s*(?P<size>\d+,\d+)")
 _population_and_density_soup_re = re.compile("\s*(?P<population>\d+,\d+)\D+(?P<density>\d+(\.\d+)?,\d+)")
 
 # according to the name currenly used in wikipedia
-_district_to_neighbourhoods = {
-    "Ciutat Vella de Barcelona" : ['La Barceloneta', 'el Gòtic', 'el Raval', 'Sant Pere, Santa Caterina i la Ribera'], 
-    "Eixample de Barcelona" : ["L'Antiga Esquerra de l'Eixample", "la Nova Esquerra de l'Eixample", "Dreta de l'Eixample", 'Fort Pienc', 'Barri de la Sagrada Família', 'Sant Antoni (Eixample)'],
-    "Sants-Montjuïc" : ['La Bordeta (Sants-Montjuïc)', 'la Font de la Guatlla', 'Hostafrancs', 'La Marina de Port', 'La Marina del Prat Vermell', 'El Poble-sec (Sants-Montjuïc)', 'Sants', 'Sants-Badal', 'Montjuïc (Barcelona)', 'Zona Franca - Port'], 
-    "Les Corts" : ['Barri de les Corts', 'La Maternitat i Sant Ramon', 'Pedralbes'], 
-    "Sarrià - Sant Gervasi" : ['El Putget i Farró', 'Sarrià (Barcelona)', 'Sant Gervasi - la Bonanova', 'Sant Gervasi - Galvany', 'Les Tres Torres', 'Vallvidrera, el Tibidabo i les Planes'], 
-    "Gràcia" : ['Vila de Gràcia', "Camp d'en Grassot i Gràcia Nova", 'La Salut', 'El Coll', 'Vallcarca i els Penitents'], 
-    "Horta-Guinardó" : ['El Baix Guinardó', 'El Guinardó', 'Can Baró', 'El Carmel', "La Font d'en Fargues", "Barri d'Horta", 'La Clota', 'Montbau', 'Sant Genís dels Agudells', 'La Teixonera', "La Vall d'Hebron"], 
-    "Nou Barris" : ['Can Peguera', 'Canyelles (Nou Barris)', 'Ciutat Meridiana', 'La Guineueta', 'Porta (Nou Barris)', 'La Prosperitat', 'Les Roquetes (Nou Barris)', ' Torre Baró', 'La Trinitat Nova', 'El Turó de la Peira', 'Vallbona (Nou Barris)', 'Verdum (Nou Barris)', 'Vilapicina i la Torre Llobeta'], 
-    "Districte de Sant Andreu" : ['Baró de Viver', 'Bon Pastor (Sant Andreu)', 'el Congrés i els Indians', 'Navas', 'Sant Andreu de Palomar', 'La Sagrera', 'Trinitat Vella'], 
-    "Districte de Sant Martí" : ['El Besós i el Maresme', 'El Clot', "Wl Camp de l'Arpa del Clot", 'Diagonal Mar i el Front Marítim del Poblenou', 'El Parc i la Llacuna del Poblenou', 'Poblenou', 'Provençals del Poblenou', 'Sant Martí de Provençals', 'La Verneda i la Pau', 'La Vila Olímpica del Poblenou']}
+_district_to_neighborhoods = {
+    u"Ciutat Vella" : [u'La Barceloneta', u'el Gòtic', u'el Raval', u'Sant Pere, Santa Caterina i la Ribera'], 
+    u"Eixample" : [u"L'Antiga Esquerra de l'Eixample", u"la Nova Esquerra de l'Eixample", u"Dreta de l'Eixample", u'Fort Pienc', u'Barri de la Sagrada Família', u'Sant Antoni (Eixample)'],
+    u"Sants-Montjuïc" : [u'La Bordeta (Sants-Montjuïc)', u'la Font de la Guatlla', u'Hostafrancs', u'La Marina de Port', u'La Marina del Prat Vermell', u'El Poble-sec (Sants-Montjuïc)', u'Sants', u'Sants-Badal', u'Montjuïc (Barcelona)', u'Zona Franca - Port'], 
+    u"Les Corts" : [u'Barri de les Corts', u'La Maternitat i Sant Ramon', u'Pedralbes'], 
+    u"Sarrià - Sant Gervasi" : [u'El Putget i Farró', u'Sarrià (Barcelona)', u'Sant Gervasi - la Bonanova', u'Sant Gervasi - Galvany', u'Les Tres Torres', u'Vallvidrera, el Tibidabo i les Planes'], 
+    u"Gràcia" : [u'Vila de Gràcia', u"Camp d'en Grassot i Gràcia Nova", u'La Salut', u'El Coll', u'Vallcarca i els Penitents'], 
+    u"Horta-Guinardó" : [u'El Baix Guinardó', u'El Guinardó', u'Can Baró', u'El Carmel', u"La Font d'en Fargues", u"Barri d'Horta", u'La Clota', u'Montbau', u'Sant Genís dels Agudells', u'La Teixonera', u"La Vall d'Hebron"], 
+    u"Nou Barris" : [u'Can Peguera', u'Canyelles (Nou Barris)', u'Ciutat Meridiana', u'La Guineueta', u'Porta (Nou Barris)', u'La Prosperitat', u'Les Roquetes (Nou Barris)', u'Torre Baró', u'La Trinitat Nova', u'El Turó de la Peira', u'Vallbona (Nou Barris)', u'Verdum (Nou Barris)', u'Vilapicina i la Torre Llobeta'], 
+    u"Districte de Sant Andreu" : [u'Baró de Viver', u'Bon Pastor (Sant Andreu)', u'El Congrés i els Indians', u'Navas', u'Sant Andreu de Palomar', u'La Sagrera', u'Trinitat Vella'], 
+    u"Districte de Sant Martí" : [u'El Besós i el Maresme', u'El Clot', u"El Camp de l'Arpa del Clot", u'Diagonal Mar i el Front Marítim del Poblenou', u'El Parc i la Llacuna del Poblenou', u'Poblenou', u'Provençals del Poblenou', u'Sant Martí de Provençals', u'La Verneda i la Pau', u'La Vila Olímpica del Poblenou']}
+
+_neighborhood_to_distric = { n : d for d, ns in _district_to_neighborhoods.iteritems()
+                                   for n in ns}
 
 def enrich_station(station):
     '''
@@ -153,6 +156,23 @@ def enrich_station(station):
                 postalcode = postalcode_match.groupdict()['postalcode'] if (postalcode_match != None) else None
             if (filter(lambda x: x == None, [district, neighborhood, postalcode]) == []):
                 break
+
+        # try with wikipedia if needed
+            # try by neighborhood
+        if neighborhood == None:
+            wikipedia_places = wikipedia.geosearch(latitude, longitude)
+            for place in wikipedia_places:
+                if place in _neighborhood_to_distric.keys():
+                    neighborhood, district = place, _neighborhood_to_distric[place]
+                    break
+             # try by district
+        if district == None:
+            wikipedia_places = wikipedia_places if (wikipedia_places != None) else wikipedia.geosearch(longitude, latitude)
+            for place in wikipedia_places:
+                if place in _district_to_neighborhoods.keys():
+                    district = place
+                    break
+
         geo_info = {"district" : district, "neighborhood" : neighborhood, "postalcode" : postalcode}
 
         return geo_info
