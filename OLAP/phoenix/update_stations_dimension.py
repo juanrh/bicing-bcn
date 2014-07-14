@@ -150,14 +150,20 @@ def enrich_station(station):
         # NOTE Geocoder.reverse_geocode returns a kind of iterator 
         # with objects that can only be consumed once, beware
         district, neighborhood, postalcode = None, None, None
-        for result in Geocoder.reverse_geocode(latitude, longitude):
-            district = result.sublocality if (district == None) else district
-            neighborhood = result.neighborhood if (neighborhood == None) else neighborhood
-            if postalcode == None:
-                postalcode_match = _postalcode_re.match(str(result))
-                postalcode = postalcode_match.groupdict()['postalcode'] if (postalcode_match != None) else None
-            if (filter(lambda x: x == None, [district, neighborhood, postalcode]) == []):
-                break
+        geo_results = None
+        try: 
+            geo_results = Geocoder.reverse_geocode(latitude, longitude)
+        except:
+            geo_results = None
+        if geo_results != None:
+            for result in geo_results:
+                district = result.sublocality if (district == None) else district
+                neighborhood = result.neighborhood if (neighborhood == None) else neighborhood
+                if postalcode == None:
+                    postalcode_match = _postalcode_re.match(str(result))
+                    postalcode = postalcode_match.groupdict()['postalcode'] if (postalcode_match != None) else None
+                if (filter(lambda x: x == None, [district, neighborhood, postalcode]) == []):
+                    break
 
         # try with wikipedia if needed
         wikipedia_places = None

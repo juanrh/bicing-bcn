@@ -1,0 +1,104 @@
+UPSERT INTO BICING_DIM_STATION
+VALUES (300, 2.17690900, 41.4315930, 47, 'Nou Barris', 'Porta (Nou Barris)', '08016', 'Carrer de Maladeta 1', 20915.43, 168181, 8.041);
+UPSERT INTO BICING_DIM_STATION
+VALUES (301, 2.16964400, 41.4370530, 61, 'Nou Barris', 'La Guineueta, Barcelona', '08042', 'Marie Curie 8', 20915.43, 168181, 8.041);
+UPSERT INTO BICING_DIM_STATION
+VALUES (302, 2.11161500, 41.3906500, 73, 'Les Corts', 'Pedralbes', '08034', 'Cavallers 41', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (303, 2.11487500, 41.3930750, 101, 'Les Corts', 'Pedralbes', '08034', 'Cavallers 66', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (304, 2.12188000, 41.3898900, 63, 'Les Corts', 'Pedralbes', '08034', 'Jim&eacute;nez Iglesias 15', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (305, 2.12363700, 41.3874980, 63, 'Les Corts', 'Pedralbes', '08028', 'Diagonal 680', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (306, 2.12291200, 41.3854650, 63, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Doctor Salvador Cardenal 7', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (307, 2.11350500, 41.3791350, 50, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Pintor Ribalta', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (308, 2.11386400, 41.3767880, 50, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Cardenal Reig 11', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (309, 2.11697300, 41.3767400, 47, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Sant Ram&oacute;n Nonat 26', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (310, 2.11907700, 41.3812230, 47, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Josep Samitier', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (311, 2.12182600, 41.3781720, 47, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Travessera de les Corts 58', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (312, 2.12658800, 41.3798160, 46, 'Les Corts', 'La Maternitat i Sant Ramon', '08028', 'Felipe de Paz 2', 13779.4, 82952, 6.02);
+UPSERT INTO BICING_DIM_STATION
+VALUES (313, 2.13101600, 41.3745580, 39, 'Sants - Montjuïc', 'Sants', '08014', 'C&aacute;ceres 53', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (314, 2.12973700, 41.3783600, 46, 'NULL', 'Sants', '08028', 'Rambla del Brasil 44', NULL, NULL, NULL);
+UPSERT INTO BICING_DIM_STATION
+VALUES (315, 2.18196600, 41.4156170, 33, 'Districte de Sant Andreu', 'Navas', '08041', 'Guinard&oacute; 32', 22319.57, 146528, 6.565);
+UPSERT INTO BICING_DIM_STATION
+VALUES (316, 2.19831600, 41.4222120, 13, 'Sant Marti', 'La Verneda i la Pau', '08020', 'Cant&agrave;bria 55', 21739.64, 228701, 10.52);
+UPSERT INTO BICING_DIM_STATION
+VALUES (317, 2.20069300, 41.4255660, 12, 'Sant Marti', 'La Verneda i la Pau', '08020', 'Rambla Prim 256', 21739.64, 228701, 10.52);
+UPSERT INTO BICING_DIM_STATION
+VALUES (318, 2.17083800, 41.4140760, 59, 'Horta-Guinardó', 'El Guinardó', '08041', 'Ronda Guinardo 83', 14325.19, 171186, 11.95);
+UPSERT INTO BICING_DIM_STATION
+VALUES (319, 2.14516100, 41.3947200, 69, 'Sarrià - Sant Gervasi', 'Sant Gervasi - Galvany', '08021', 'Amig&oacute; 23', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (320, 2.14587500, 41.4033840, 86, 'Sarrià - Sant Gervasi', 'El Putget i Farró', '08006', 'Gleva 21', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (321, 2.14364800, 41.4040380, 86, 'Sarrià - Sant Gervasi', 'El Putget i Farró', '08006', 'Carrer de P&aacute;dua 98', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (322, 2.13907000, 41.4009770, 106, 'NULL', 'NULL', '08021', 'Santal&oacute; 165', NULL, NULL, NULL);
+UPSERT INTO BICING_DIM_STATION
+VALUES (323, 2.13871700, 41.3979960, 79, 'Sarrià-Sant Gervasi', 'Sant Gervasi – Galvany', '08021', 'Vallmajor 13', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (324, 2.13625800, 41.3969380, 79, 'Sarrià-Sant Gervasi', 'Sant Gervasi – Galvany', '08021', 'Reina Victoria 31', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (325, 2.13032500, 41.3949300, 82, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Alt de Gironella 13', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (326, 2.13774200, 41.4069830, 106, 'Sarrià - Sant Gervasi', 'Sant Gervasi - la Bonanova', '08022', 'Castanyer 16', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (327, 2.13453000, 41.4050000, 106, 'Sarrià - Sant Gervasi', 'Sant Gervasi - la Bonanova', '08022', 'Reus 23', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (328, 2.13427000, 41.4029300, 106, 'Sarrià - Sant Gervasi', 'Sant Gervasi - la Bonanova', '08022', 'Artesa de Segre 2', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (329, 2.12854100, 41.4028790, 130, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Carrer de les Escoles Pies 99', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (330, 2.13065800, 41.4005870, 130, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Doctor Carulla 44', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (331, 2.12801000, 41.3970600, 82, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Castellnou 65', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (332, 2.12809000, 41.3998220, 82, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Doctor Roux 86', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (333, 2.12510600, 41.3956320, 82, 'NULL', 'NULL', '08034', 'Passatge de Senillosa 3', NULL, NULL, NULL);
+UPSERT INTO BICING_DIM_STATION
+VALUES (334, 2.12326800, 41.4007220, 138, 'Sarrià-Sant Gervasi', 'Les Tres Torres', '08017', 'Via Augusta 348', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (335, 2.12322400, 41.3936390, 96, 'Sarrià-Sant Gervasi', 'Sarrià, Barcelona', '08034', 'Santa Am&egrave;lia 2', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (336, 2.12097300, 41.3952740, 96, 'Sarrià - Sant Gervasi', 'Sarrià (Barcelona)', '08034', 'Caponata 10', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (337, 2.12042200, 41.3987190, 96, 'Sarrià-Sant Gervasi', 'Sarrià, Barcelona', '08034', 'Negrevern&iacute;s 20', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (338, 2.11950600, 41.3975720, 96, 'Sarrià-Sant Gervasi', 'Sarrià, Barcelona', '08034', 'Avinguda de J.Foix 63', 7163.32, 143911, 20.09);
+UPSERT INTO BICING_DIM_STATION
+VALUES (339, 2.20370000, 41.4026000, 10, 'Sant Marti', 'El Poblenou', '08005', 'Bilbao 51', 21739.64, 228701, 10.52);
+UPSERT INTO BICING_DIM_STATION
+VALUES (340, 2.20463400, 41.4361450, 28, 'Districte de Sant Andreu', 'Bon Pastor (Sant Andreu)', '08030', 'Sant Adri&agrave; 113', 22319.57, 146528, 6.565);
+UPSERT INTO BICING_DIM_STATION
+VALUES (341, 2.20588600, 41.4341910, 28, 'Districte de Sant Andreu', 'Bon Pastor (Sant Andreu)', '08030', 'Passeig Enric Sanch&iacute;s 33', 22319.57, 146528, 6.565);
+UPSERT INTO BICING_DIM_STATION
+VALUES (342, 2.19370200, 41.4035020, 134, 'Sant Marti', 'El Parc i la Llacuna del Poblenou', '08018', 'Roc Boronat 134', 21739.64, 228701, 10.52);
+UPSERT INTO BICING_DIM_STATION
+VALUES (343, 2.19959800, 41.4388860, 19, 'Sant Andreu', 'Bon Pastor', '08030', 'Campana de la Maquinista', 22319.57, 146528, 6.565);
+UPSERT INTO BICING_DIM_STATION
+VALUES (344, 2.19953800, 41.4431270, 23, 'Sant Andreu', 'Baró de Viver', '08030', 'Ciutat d&#039;Asunci&oacute;n 73', 22319.57, 146528, 6.565);
+UPSERT INTO BICING_DIM_STATION
+VALUES (345, 2.13977100, 41.3630930, 48, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Pl. Teresa de Claramunt', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (346, 2.13913200, 41.3606540, 48, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Carrer de la Foneria 33', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (347, 2.14340100, 41.3582550, 34, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Mare de D&eacute;u dels Ports 235', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (348, 2.14156300, 41.3570670, 13, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Jardins de Can Ferrero', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (349, 2.13717200, 41.3573380, 13, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Carrer de l&#039;Energia 2', 7950.96, 182395, 22.94);
+UPSERT INTO BICING_DIM_STATION
+VALUES (350, 2.14812000, 41.3918330, 69, 'Eixample', 'L"Antiga Esquerra de l"Eixample', '08036', 'Villarroel 208', 35678.34, 266874, 7.48);
+UPSERT INTO BICING_DIM_STATION
+VALUES (351, 2.13563700, 41.3621350, 48, 'Sants - Montjuïc', 'La Marina de Port', '08038', 'Jane Adams 26', 7950.96, 182395, 22.94);
