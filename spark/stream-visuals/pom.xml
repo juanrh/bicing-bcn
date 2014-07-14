@@ -89,6 +89,11 @@
         	<artifactId>fugue</artifactId>
         	<version>2.1.0</version>
     	</dependency>
+    	<dependency>
+			<groupId>org.apache.phoenix</groupId>
+			<artifactId>phoenix-core</artifactId>
+			<version>3.0.0-incubating</version>
+		</dependency>
 		<!--  The exclusion prevents a "SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation. -->
 	   	<dependency>
     		<groupId>org.apache.hadoop</groupId>
