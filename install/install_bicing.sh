@@ -3,6 +3,7 @@
 # TODO: installer for Apache Phoenix client, and server
 #  [cloudera@localhost phoenix3]$ sudo cp -r phoenix-3.0.0-incubating /usr/lib/bicingbcn/
 # TODO: Spark
+# For Spark Streaming ensure /user/cloudera/bicing/streaming_checkpoints is created
 # TODO: Storm
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
