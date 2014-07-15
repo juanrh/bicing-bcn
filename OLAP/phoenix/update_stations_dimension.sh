@@ -12,7 +12,7 @@ echo "Starting update of ${TABLE_NAME}"
 
 echo "Generating sql script"
 pushd ${SCRIPT_DIR}
-# FIXME python2.7 ${UPDATE_SCRIPT}
+python2.7 ${UPDATE_SCRIPT}
 popd
 echo "Done generating sql script"
 
