@@ -43,6 +43,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
+/**
+ * Run to YARN with (start YARN from Cloudera Manager before) 
+ * 
+[cloudera@localhost spark-1.0.0-bin-cdh4]$ pwd
+/home/cloudera/Sistemas/Spark/spark-1.0.0-bin-cdh4
+[cloudera@localhost spark-1.0.0-bin-cdh4]$ ./bin/spark-submit --class org.collprod.bicingbcn.etl.EtlStream --master localhost /home/cloudera/git/bicing-bcn/spark/stream-visuals/target/spark-stream-visuals-0.0.1-SNAPSHOT.jar
+ * 
+ * */
+
 public class EtlStream {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(EtlStream.class);
@@ -83,8 +92,11 @@ public class EtlStream {
 		// FIXME: although followed http://spark.apache.org/docs/latest/hadoop-third-party-distributions.html, 
 		// I get http://qnalist.com/questions/4957822/hdfs-server-client-ipc-version-mismatch-while-trying-to-access-hdfs-files-using-spark-0-9-1
 		// http://comments.gmane.org/gmane.comp.lang.scala.spark.user/106
-		// jssc.checkpoint("hdfs://localhost:8020/user/cloudera/bicing/streaming_checkpoints");
-		jssc.checkpoint("/home/cloudera/bicing/streaming_checkpoints");
+		
+		// This doesn't works in local mode (e.g. master="local[2]"), but for example it works in YARN 
+		jssc.checkpoint("hdfs://localhost:8020/user/cloudera/bicing/streaming_checkpoints");
+		// Works both in local mode (e.g. master="local[2]") and YARN
+		// jssc.checkpoint("/home/cloudera/bicing/streaming_checkpoints");
 		
 		// Connect to Kafka
 		Map<String,Integer> kafkaTopics = new HashMap<String, Integer>();

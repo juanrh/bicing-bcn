@@ -14,6 +14,7 @@
 		<version-slf4j>1.7.7</version-slf4j>		
     	<!-- <hadoop.version>2.0.0-mr1-cdh4.4.0</hadoop.version> -->
     <!-- 	<hadoop.major.version>2.0</hadoop.major.version> -->
+    	<!-- For YARN mode -->
     	<hadoop-version>2.0.0-cdh4.4.0</hadoop-version>
 	</properties>
 	<repositories>
@@ -178,7 +179,19 @@
                  				that leads to "No FileSystem for scheme: hdfs"
                  				 -->
                  				<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-							</transformers>
+								</transformers>
+								<!-- Avoid Exception in thread "main" java.lang.SecurityException: Invalid signature file digest for Manifest main attributes
+								when sending to YARN -->
+								<filters>
+									<filter>
+										<artifact>*:*</artifact>
+										<excludes>
+											<exclude>META-INF/*.SF</exclude>
+											<exclude>META-INF/*.DSA</exclude>
+											<exclude>META-INF/*.RSA</exclude>
+										</excludes>
+									</filter>
+								</filters>
 						</configuration>
 					</execution>
 				</executions>
