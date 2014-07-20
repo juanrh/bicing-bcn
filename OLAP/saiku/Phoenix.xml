@@ -25,6 +25,11 @@ FROM "BICING_FACT"
       </Hierarchy>
     </Dimension>
     -->
+<!-- 
+Other sensible options if joins were working would have been defining all the
+members of the time dimension as degenerate dimension, as they would be duplicated
+only as many times as different stations are (which is nearly 500)
+-->
     <!-- 
 http://mondrian.pentaho.com/documentation/schema.php: 3.3.1 Mapping dimensions and hierarchies onto tables 
 The <Dimension> element has a foreignKey attribute, which is the name of a column in the fact table; the <Hierarchy> element has a primaryKey attribute.
@@ -51,14 +56,82 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
   <!-- Single denormalized "Big Table" approach -->
   <Cube name="BicingBCN">
     <Table name="BICING"/>
-    <Dimension name="Geo">
+    <Dimension name="StationDistrict">
       <Hierarchy hasAll="true" allMemberName="All Districts">
-        <Level name="District" column="DISTRICT" uniqueMembers="true"/>
-        <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true"/>
-        <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false"/>
+        <Level name="District" column="DISTRICT" uniqueMembers="true" type="String"/>
+        <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true" type="String"/>
+        <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false" type="String"/>
       </Hierarchy>
     </Dimension>
-    <Measure name="BikesAvailable" column="AVAILABLE" aggregator="sum" formatString="Standard"/>
+
+    <!-- http://mondrian.pentaho.com/documentation/schema.php#Multiple_hierarchies -->
+    <!-- Not very interesting if a geo hierarchy cannot be stablished
+    <Dimension name="Geo">
+    
+      <Hierarchy name="Longitude" hasAll="false">
+        <Level name="Longitude" column="LONGITUDE" uniqueMembers="true" type="Numeric"/>
+      </Hierarchy>
+      <Hierarchy name="Latitude" hasAll="false">
+        <Level name="Latitude" column="LATITUDE" uniqueMembers="true" type="Numeric"/>
+      </Hierarchy>
+       <Hierarchy name="Heigh" hasAll="false">
+        <Level name="Heigh" column="HEIGH" uniqueMembers="true" type="Numeric"/>
+      </Hierarchy>
+    </Dimension>
+  -->
+
+    <Dimension name="StationStatus">
+      <Hierarchy hasAll="true" allMemberName="All Status">
+        <Level name="Status" column="STATUS" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+    </Dimension>
+
+    <!-- See possible values for levelType at http://mondrian.pentaho.com/api/mondrian/olap/LevelType.html -->
+    <!-- Phoenix types are not those expected by Mondrian TimeDimension
+    <Dimension name="Time" type="TimeDimension">  
+      <Hierarchy name="Time" hasAll="true" allMemberName="All Periods">
+        <Level name="Year" column="YEAR" uniqueMembers="true" levelType="TimeYears" type="Numeric"/>
+        <Level name="Quarter" column="TRIMESTER" uniqueMembers="false" levelType="TimeQuarters"/>
+        <Level name="Month" column="MONTH" uniqueMembers="false" levelType="TimeMonths" type="Numeric"/>
+        <Level name="Week" column="MONTH_WEEK" uniqueMembers="false" levelType="TimeWeeks"/>
+        <Level name="Day" column="MONTH_DAY" uniqueMembers="false" levelType="TimeDays" type="Numeric"/>
+        <Level name="Hour" column="HOUR" uniqueMembers="false" levelType="TimeHours" type="Numeric"/>
+        <Level name="Minute" column="MINUTE" uniqueMembers="false" levelType="TimeMinutes" type="Numeric"/>
+      </Hierarchy>
+    </Dimension> -->
+
+    <Dimension name="Time">
+      <Hierarchy name="Time" hasAll="true" allMemberName="All Periods">
+        <Level name="Year" column="YEAR" uniqueMembers="true" type="Numeric"/>
+        <Level name="Quarter" column="TRIMESTER" uniqueMembers="false"/>
+        <Level name="Month" column="MONTH" uniqueMembers="false" type="Numeric"/>
+        <Level name="Week" column="MONTH_WEEK" uniqueMembers="false" type="Numeric" />
+        <Level name="Day" column="MONTH_DAY" uniqueMembers="false" type="Numeric"/>
+        <Level name="Hour" column="HOUR" uniqueMembers="false" type="Numeric"/>
+        <Level name="Minute" column="MINUTE" uniqueMembers="false" type="Numeric"/>
+      </Hierarchy>
+    </Dimension>
+
+    <Dimension name="DaySplits">
+      <Hierarchy name="DaySixths" hasAll="true">
+        <Level name="DaySixth" column="DAYSIXTH" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+      <Hierarchy name="DayParts" hasAll="true">
+        <Level name="DayPart" column="PART" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+    </Dimension>
+
+    <Measure name="TotalBikesAvailable" column="AVAILABLE" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalBikeSlots" column="SLOTS" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalCapacity" column="CAPACITY" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalLent" column="LENT" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalReturned" column="RETURNED" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+
+    <Measure name="AverageBikesAvailable" column="AVAILABLE" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+    <Measure name="AverageBikeSlots" column="SLOTS" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+    <Measure name="AverageCapacity" column="CAPACITY" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+    <Measure name="AverageLent" column="LENT" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+    <Measure name="AverageReturned" column="RETURNED" datatype="Numeric" aggregator="avg" formatString="Standard"/>
   </Cube>
 
   <Cube name="PERFORMANCE_100000">
