@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Schema name="Phoenix">
-  <Cube name="PERFORMANCE_100000_PROC">
+  <Cube name="BicingBCN">
     <Table name="PERFORMANCE_100000_PROC"/>
     <Dimension name="HOST">
       <Hierarchy hasAll="true" allMemberName="All Types">

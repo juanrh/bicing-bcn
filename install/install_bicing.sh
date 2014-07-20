@@ -5,6 +5,7 @@
 # TODO: Spark
 # For Spark Streaming ensure /user/cloudera/bicing/streaming_checkpoints is created
 # TODO: Storm
+# TODO Saiku and Saiku configuration for Phoenix
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source ${SCRIPT_DIR}/config.sh

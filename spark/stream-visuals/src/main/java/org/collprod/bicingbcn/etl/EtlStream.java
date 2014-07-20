@@ -70,6 +70,235 @@ public class EtlStream {
 		return config;
 	}
 	
+	/**
+	Computing the new values for the fact table and the time dimension, and inserting in Phoenix. 
+	Using a state per station, the state is just an integer with the number of bikes in the station for 
+	the last batch, and its used to compute the number of bikes lent and returned 
+	
+	NOTE: trusting in Kafka ordering warranties, also ordering by timetag in each batch RDD		
+	NOTE: due to Spark Streaming design there is some constraints in the size of the batches used for
+		  checkpointed streams like those using updateStateByKey like this one, which implies a batch 
+		  size of at least 10 seconds (http://spark.apache.org/docs/latest/streaming-programming-guide.html#persistence
+		  "For DStreams that must be checkpointed (that is, DStreams created by updateStateByKey and 
+		  reduceByKeyAndWindow with inverse function), the checkpoint interval of the DStream is by 
+		  default set to a multiple of the DStream’s sliding interval such that its at least 10 seconds.")
+	 */
+	private static void updateBicingStar(final Broadcast<String> phoenixJdbcDriver, final Broadcast<String> phoenixDbUrl, 
+								  final Broadcast<PhoenixWriter> phoenixWriter, JavaPairDStream<Integer, BicingStationDao.Value> stationStatePairs) {
+		
+		JavaPairDStream<Integer, Integer> stateUpdates = stationStatePairs.updateStateByKey(new Function2<List<BicingStationDao.Value>, Optional<Integer>, Optional<Integer>>() {
+
+			private static final long serialVersionUID = 1869498697659731642L;
+
+			/**
+			 * @param lastBikeCountState bike count for the most recent station info in the last batch
+			 * @param stationsInfo station info instances for the station corresponding to this key, for this batch
+			 * 
+			 * @return number of stations in the most recent station info of this batch
+			 * 
+			 * */
+			@Override
+			public Optional<Integer> call(List<BicingStationDao.Value> stationsInfo, Optional<Integer> lastBikeCountState) throws Exception {				
+				// Prepare DB connection
+					// Register JDBC driver
+				try {
+					Class.forName(phoenixJdbcDriver.getValue());
+				} catch (ClassNotFoundException cne) {
+					LOGGER.error("Error loading Phoenix driver {}", ExceptionUtils.getFullStackTrace(cne));
+					// FIXME: use custom bicing exception class
+					throw new RuntimeException(cne);
+				}
+				
+				// get last state
+				int lastBikeCount = lastBikeCountState.or(-1);
+				
+				// sort by time stamp and generate a batch of upserts
+				List<BicingStationDao.Value> stationsInfoByUpdateTime = new Ordering<BicingStationDao.Value>() {
+
+					@Override
+					public int compare(@Nullable Value left, @Nullable Value right) {
+						return Longs.compare(left.updatetime(), right.updatetime());
+					}
+				}.sortedCopy(stationsInfo);
+				
+				Connection dbConnection = null;
+				PreparedStatement stmtBicingFact = null;
+				PreparedStatement stmtBicingDimTime = null;
+				// PreparedStatement stmtCheckExistsTimetagDimTime = null;
+				
+				try  {
+					// http://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html
+					dbConnection = DriverManager.getConnection(phoenixDbUrl.getValue());
+					dbConnection.setAutoCommit(true);
+
+					stmtBicingFact = phoenixWriter.getValue().buildBicingFactStatement(dbConnection); 
+					stmtBicingDimTime = phoenixWriter.getValue().buildBicingDimTime(dbConnection);
+					// stmtCheckExistsTimetagDimTime = phoenixWriter.getValue().buildCheckExistsTimetagDimTime(dbConnection);
+								
+					for (BicingStationDao.Value stationInfo : stationsInfoByUpdateTime) {				
+						// generate and execute an upsert for BICING_FACT
+						LOGGER.info("Updating table BICING_FACT");
+						phoenixWriter.getValue().loadBicingFactStatement(stationInfo, lastBikeCount, stmtBicingFact);							
+						stmtBicingFact.executeUpdate();
+						
+						// generate upsert for BICING_DIM_TIME
+						// Note the same timetag will be present for several stations. The update is deterministic
+						// so we perform it as many times as needed because we assume that the cost of checking
+						// whether it was performed or not and only updating if not is higher, because several
+						// nodes of the spark cluster will be processing different stationInfo values for the same 
+						// timetag and different stations at the same time, as these will correspond to the 
+						// same source bicing XML						
+						LOGGER.info("Updating table BICING_DIM_TIME");
+						phoenixWriter.getValue().loadBicingDimTimeStatement(stationInfo, stmtBicingDimTime);
+						stmtBicingDimTime.executeUpdate();
+						/*
+						 * Alternative that only updates if needed
+						 * 
+						 * if (EtlStream.checkExistsTimetagDimTime(stationInfo, stmtCheckExistsTimetagDimTime)) {
+						 
+						LOGGER.info("Row for timetag {} in BICING_DIM_TIME already exists", stationInfo.updatetime());
+						} else {
+							EtlStream.loadBicingDimTimeStatement(stationInfo, stmtBicingDimTime);
+							stmtBicingDimTime.executeUpdate();
+						}*/
+						
+						// Commit to database both updates
+						dbConnection.commit();
+						
+						// update state
+						lastBikeCount = stationInfo.bikes();
+					}
+				} catch(SQLException se)  {
+					LOGGER.error("Error updating tables BICING_FACT and BICING_DIM_TIME for stationInfo {}, {}", stationsInfo, ExceptionUtils.getStackTrace(se));
+					// FIXME: use custom bicing exception class
+					throw new RuntimeException(se);
+				}
+				
+				finally {
+					// Close DB resources
+					if (stmtBicingFact != null) {
+						stmtBicingFact.close();
+					}
+					/*
+					if (stmtCheckExistsTimetagDimTime != null) {
+						stmtCheckExistsTimetagDimTime.close();
+					} */
+					if (stmtBicingDimTime != null) {
+						stmtBicingDimTime.close();
+					}
+					if (dbConnection != null) {
+						dbConnection.close();
+					}
+				}
+				 
+				return Optional.of(lastBikeCount);
+			}	
+		});
+		
+		stateUpdates.print(); // force evaluation, this is essential for this code to have side effects!
+	}
+	
+	/**
+	Computing the new values for the fact table and the time dimension, and inserting in Phoenix. 
+	Using a state per station, the state is just an integer with the number of bikes in the station for 
+	the last batch, and its used to compute the number of bikes lent and returned 
+	
+	NOTE: trusting in Kafka ordering warranties, also ordering by timetag in each batch RDD		
+	NOTE: due to Spark Streaming design there is some constraints in the size of the batches used for
+		  checkpointed streams like those using updateStateByKey like this one, which implies a batch 
+		  size of at least 10 seconds (http://spark.apache.org/docs/latest/streaming-programming-guide.html#persistence
+		  "For DStreams that must be checkpointed (that is, DStreams created by updateStateByKey and 
+		  reduceByKeyAndWindow with inverse function), the checkpoint interval of the DStream is by 
+		  default set to a multiple of the DStream’s sliding interval such that its at least 10 seconds.")
+	 */
+	private static void updateBicingBigTable(final Broadcast<String> phoenixJdbcDriver, final Broadcast<String> phoenixDbUrl, 
+								  final Broadcast<PhoenixWriter> phoenixWriter, JavaPairDStream<Integer, BicingStationDao.Value> stationStatePairs) {
+		
+		JavaPairDStream<Integer, Integer> stateUpdates = stationStatePairs.updateStateByKey(new Function2<List<BicingStationDao.Value>, Optional<Integer>, Optional<Integer>>() {
+
+			private static final long serialVersionUID = 1869498697659731642L;
+
+			/**
+			 * @param lastBikeCountState bike count for the most recent station info in the last batch
+			 * @param stationsInfo station info instances for the station corresponding to this key, for this batch
+			 * 
+			 * @return number of stations in the most recent station info of this batch
+			 * 
+			 * */
+			@Override
+			public Optional<Integer> call(List<BicingStationDao.Value> stationsInfo, Optional<Integer> lastBikeCountState) throws Exception {				
+				// Prepare DB connection
+					// Register JDBC driver
+				try {
+					Class.forName(phoenixJdbcDriver.getValue());
+				} catch (ClassNotFoundException cne) {
+					LOGGER.error("Error loading Phoenix driver {}", ExceptionUtils.getFullStackTrace(cne));
+					// FIXME: use custom bicing exception class
+					throw new RuntimeException(cne);
+				}
+				
+				// get last state
+				int lastBikeCount = lastBikeCountState.or(-1);
+				
+				// sort by time stamp and generate a batch of upserts
+				List<BicingStationDao.Value> stationsInfoByUpdateTime = new Ordering<BicingStationDao.Value>() {
+
+					@Override
+					public int compare(@Nullable Value left, @Nullable Value right) {
+						return Longs.compare(left.updatetime(), right.updatetime());
+					}
+				}.sortedCopy(stationsInfo);
+				
+				Connection dbConnection = null;
+				PreparedStatement stmtGetStationInfo = null;
+				PreparedStatement stmtUpsertBicingBigTableStatement= null;
+		
+				try  {
+					// http://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html
+					dbConnection = DriverManager.getConnection(phoenixDbUrl.getValue());
+					dbConnection.setAutoCommit(true);
+					
+					stmtGetStationInfo = phoenixWriter.getValue().buildLookupStationStatement(dbConnection);
+					stmtUpsertBicingBigTableStatement  = phoenixWriter.getValue().buildBicingBigTableStatement(dbConnection);
+								
+					for (BicingStationDao.Value stationInfo : stationsInfoByUpdateTime) {
+						// generate and execute an upsert for BICING
+						LOGGER.info("Updating table BICING");
+						phoenixWriter.getValue().loadBicingBigTableStatement(stationInfo, lastBikeCount, stmtUpsertBicingBigTableStatement, stmtGetStationInfo);
+						stmtUpsertBicingBigTableStatement.executeUpdate();
+												
+						// Commit update to database 
+						dbConnection.commit();
+						
+						// update state
+						lastBikeCount = stationInfo.bikes();
+					}
+				} catch(SQLException se)  {
+					LOGGER.error("Error updating tables BICING_FACT and BICING_DIM_TIME for stationInfo {}, {}", stationsInfo, ExceptionUtils.getStackTrace(se));
+					// FIXME: use custom bicing exception class
+					throw new RuntimeException(se);
+				}
+				
+				finally {
+					// Close DB resources
+					if (stmtGetStationInfo != null) {
+						stmtGetStationInfo.close();
+					}
+					if (stmtUpsertBicingBigTableStatement != null) {
+						stmtUpsertBicingBigTableStatement.close();
+					}
+					if (dbConnection != null) {
+						dbConnection.close();
+					}
+				}
+				 
+				return Optional.of(lastBikeCount);
+			}	
+		});
+		
+		stateUpdates.print(); // force evaluation, this is essential for this code to have side effects!
+	}
+	
 	public static void run(PropertiesConfiguration config) {
 		// Connect to Spark cluster
 		JavaStreamingContext jssc = new JavaStreamingContext(config.getString("spark.master"), 
@@ -127,126 +356,11 @@ public class EtlStream {
 					}
 				});
 		
-		/*
-		Computing the new values for the fact table and the time dimension, and inserting in Phoenix. 
-		Using a state per station, the state is just an integer with the number of bikes in the station for 
-		the last batch, and its used to compute the number of bikes lent and returned 
-		
-		NOTE: trusting in Kafka ordering warranties, also ordering by timetag in each batch RDD		
-		NOTE: due to Spark Streaming design there is some constraints in the size of the batches used for
-			  checkpointed streams like those using updateStateByKey like this one, which implies a batch 
-			  size of at least 10 seconds (http://spark.apache.org/docs/latest/streaming-programming-guide.html#persistence
-			  "For DStreams that must be checkpointed (that is, DStreams created by updateStateByKey and 
-			  reduceByKeyAndWindow with inverse function), the checkpoint interval of the DStream is by 
-			  default set to a multiple of the DStream’s sliding interval such that its at least 10 seconds.")
-		 */
-		JavaPairDStream<Integer, Integer> stateUpdates = stationStatePairs.updateStateByKey(new Function2<List<BicingStationDao.Value>, Optional<Integer>, Optional<Integer>>() {
-
-			private static final long serialVersionUID = 1869498697659731642L;
-
-			/**
-			 * @param lastBikeCountState bike count for the most recent station info in the last batch
-			 * @param stationsInfo station info instances for the station corresponding to this key, for this batch
-			 * 
-			 * @return number of stations in the most recent station info of this batch
-			 * 
-			 * */
-			@Override
-			public Optional<Integer> call(List<BicingStationDao.Value> stationsInfo, Optional<Integer> lastBikeCountState) throws Exception {				
-				// Prepare DB connection
-					// Register JDBC driver
-				Class.forName(phoenixJdbcDriver.getValue()); // TODO try for this exception
-				
-				// get last state
-				int lastBikeCount = lastBikeCountState.or(-1);
-				
-				// sort by time stamp and generate a batch of upserts
-				List<BicingStationDao.Value> stationsInfoByUpdateTime = new Ordering<BicingStationDao.Value>() {
-
-					@Override
-					public int compare(@Nullable Value left, @Nullable Value right) {
-						return Longs.compare(left.updatetime(), right.updatetime());
-					}
-				}.sortedCopy(stationsInfo);
-				
-				Connection dbConnection = null;
-				PreparedStatement stmtBicingFact = null;
-				PreparedStatement stmtCheckExistsTimetagDimTime = null;
-				PreparedStatement stmtBicingDimTime = null;
-				
-				try  {
-					// http://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html
-					dbConnection = DriverManager.getConnection(phoenixDbUrl.getValue());
-					dbConnection.setAutoCommit(true);
-
-					stmtBicingFact = phoenixWriter.getValue().buildBicingFactStatement(dbConnection); 
-					stmtBicingDimTime = phoenixWriter.getValue().buildBicingDimTime(dbConnection);
-					stmtCheckExistsTimetagDimTime = phoenixWriter.getValue().buildCheckExistsTimetagDimTime(dbConnection);
-								
-					for (BicingStationDao.Value stationInfo : stationsInfoByUpdateTime) {
-						// generate and execute an upsert for BICING_FACT
-						LOGGER.info("Updating table BICING_FACT");
-						phoenixWriter.getValue().loadBicingFactStatement(stationInfo, lastBikeCount, stmtBicingFact);							
-						stmtBicingFact.executeUpdate();
-						
-						// generate upsert for BICING_DIM_TIME
-						// Note the same timetag will be present for several stations. The update is deterministic
-						// so we perform it as many times as needed because we assume that the cost of checking
-						// whether it was performed or not and only updating if not is higher, because several
-						// nodes of the spark cluster will be processing different stationInfo values for the same 
-						// timetag and different stations at the same time, as these will correspond to the 
-						// same source bicing XML						
-						LOGGER.info("Updating table BICING_DIM_TIME");
-						phoenixWriter.getValue().loadBicingDimTimeStatement(stationInfo, stmtBicingDimTime);
-						stmtBicingDimTime.executeUpdate();
-						/*
-						 * Alternative that only updates if needed
-						 * 
-						 * if (EtlStream.checkExistsTimetagDimTime(stationInfo, stmtCheckExistsTimetagDimTime)) {
-						 
-						LOGGER.info("Row for timetag {} in BICING_DIM_TIME already exists", stationInfo.updatetime());
-						} else {
-							EtlStream.loadBicingDimTimeStatement(stationInfo, stmtBicingDimTime);
-							stmtBicingDimTime.executeUpdate();
-						}*/
-						
-						// Commit to database both updates
-						dbConnection.commit();
-						
-						// update state
-						lastBikeCount = stationInfo.bikes();
-					}
-				} catch(SQLException se)  {
-					LOGGER.error("Error updating tables BICING_FACT and BICING_DIM_TIME for stationInfo {}, {}", stationsInfo, ExceptionUtils.getStackTrace(se));
-					throw se;
-				}
-				
-				finally {
-					// Close DB resources
-					if (stmtBicingFact != null) {
-						stmtBicingFact.close();
-					}
-					if (stmtCheckExistsTimetagDimTime != null) {
-						stmtCheckExistsTimetagDimTime.close();
-					}
-					if (stmtBicingDimTime != null) {
-						stmtBicingDimTime.close();
-					}
-					if (dbConnection != null) {
-						dbConnection.close();
-					}
-				}
-				 
-				return Optional.of(lastBikeCount);
-			}	
-		});
-		
-		stateUpdates.print(); // force evaluation, this is essential for this code to have side effects!
+		updateBicingBigTable(phoenixJdbcDriver, phoenixDbUrl, phoenixWriter, stationStatePairs);
 		
 		// Launch Spark stream and await for termination
 		jssc.start();
 		jssc.awaitTermination();
-		
 	}
 
 	public static void main(String[] args) {

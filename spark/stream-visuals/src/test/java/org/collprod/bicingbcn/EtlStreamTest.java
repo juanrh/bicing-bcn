@@ -83,5 +83,66 @@ public class EtlStreamTest {
 		stmtCheckExistsTimetagDimTime.close();
 		con.close();
 	}
+	
 
+	/**
+	 * Ignored as it assumes a particular state of the database
+	 * */
+	@Ignore
+	@Test
+	public void testLookupStationState() throws ClassNotFoundException, SQLException {
+		PreparedStatement stmtGetStationInfo = null;
+		Long stationId = 510L;
+		try  {
+			Class.forName(JDBC_DRIVER);
+			con = DriverManager.getConnection(DB_URL);
+			stmtGetStationInfo = phoenixWriter.buildLookupStationStatement(con);
+			PhoenixWriter.DimStationRecord stationInfo = phoenixWriter.lookupStationRecord(stmtGetStationInfo, stationId);
+			System.out.println(stationInfo);
+		
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			// Close DB resources
+			if (stmtGetStationInfo != null) {
+				stmtGetStationInfo.close();
+			}
+			if (con != null) {
+				con.close();
+			}
+		}
+	}
+	
+	@Test
+	public void testBicingBigTableUpsert() throws ClassNotFoundException, SQLException {
+		PreparedStatement stmtGetStationInfo = null;
+		PreparedStatement stmtUpsertBicingBigTableStatement= null;
+		
+		try  {
+			Class.forName(JDBC_DRIVER);
+			con = DriverManager.getConnection(DB_URL);
+			stmtGetStationInfo = phoenixWriter.buildLookupStationStatement(con);
+			
+			stmtUpsertBicingBigTableStatement = phoenixWriter.buildBicingBigTableStatement(con);
+			stmtGetStationInfo = phoenixWriter.buildLookupStationStatement(con);
+			phoenixWriter.loadBicingBigTableStatement(stationInfo, 0, stmtUpsertBicingBigTableStatement, stmtGetStationInfo);
+			stmtUpsertBicingBigTableStatement.executeUpdate();
+			
+			con.commit();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			// Close DB resources
+			if (stmtGetStationInfo != null) {
+				stmtGetStationInfo.close();
+			}
+			if (stmtUpsertBicingBigTableStatement != null) {
+				stmtUpsertBicingBigTableStatement.close();
+			}
+			if (con != null) {
+				con.close();
+			}
+		}
+	}
+	
 }
