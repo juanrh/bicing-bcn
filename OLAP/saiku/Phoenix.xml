@@ -61,6 +61,7 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
         <Level name="District" column="DISTRICT" uniqueMembers="true" type="String"/>
         <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true" type="String"/>
         <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false" type="String"/>
+        <Level name="StationId" column="STATION" uniqueMembers="false" type="String"/>
       </Hierarchy>
     </Dimension>
 
@@ -103,7 +104,12 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
     <Dimension name="Time">
       <Hierarchy name="Time" hasAll="true" allMemberName="All Periods">
         <Level name="Year" column="YEAR" uniqueMembers="true" type="Numeric"/>
-        <Level name="Quarter" column="TRIMESTER" uniqueMembers="false"/>
+        <Level name="Quarter" column="TRIMESTER" uniqueMembers="false" type="Numeric"/>
+        <!-- <Level name="Quarter" column="TRIMESTER" uniqueMembers="false" type="String">
+            <KeyExpression>
+              <SQL dialect="generic">TO_CHAR("TRIMESTER")</SQL>
+            </KeyExpression>
+        </Level> -->
         <Level name="Month" column="MONTH" uniqueMembers="false" type="Numeric"/>
         <Level name="Week" column="MONTH_WEEK" uniqueMembers="false" type="Numeric" />
         <Level name="Day" column="MONTH_DAY" uniqueMembers="false" type="Numeric"/>
@@ -112,6 +118,24 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
       </Hierarchy>
     </Dimension>
 
+    <!--
+    This doesn't work because Saiku generates a select distinct that raises an exception in Phoenix
+
+    0: jdbc:phoenix:localhost> select distinct TO_CHAR(CURRENT_DATE(), 'yyyy') as "c0" from "BICING" as "BICING";
+    java.lang.NullPointerException
+    at org.apache.phoenix.iterate.GroupedAggregatingResultIterator.<init>(GroupedAggregatingResultIterator.java:61)
+    at org.apache.phoenix.iterate.UngroupedAggregatingResultIterator.<init>(UngroupedAggregatingResultIterator.java:34)
+
+    <Dimension name="CurrentTime">
+      <Hierarchy name="CurrentYear" hasAll="false">
+          <Level name="Current" uniqueMembers="true" type="String">
+            <KeyExpression>
+              <SQL dialect="generic">TO_CHAR(CURRENT_DATE(), 'yyyy')</SQL>
+            </KeyExpression>
+          </Level>
+      </Hierarchy>
+    </Dimension>
+     -->
     <Dimension name="DaySplits">
       <Hierarchy name="DaySixths" hasAll="true">
         <Level name="DaySixth" column="DAYSIXTH" uniqueMembers="true" type="String"/>
@@ -132,6 +156,21 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
     <Measure name="AverageCapacity" column="CAPACITY" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageLent" column="LENT" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageReturned" column="RETURNED" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+
+    <!-- As an alternative to a CurrentTime dimension, we define Named Sets that can be later used 
+    in MDX custom statements  
+    NOTE: in Mondrian 3 the order of the tags matter, so all the dimension tag must be together, the same with 
+    all the Measures, etc. The tags that doesn't follow that (e.g. a <Measure> that is not close to the others)
+    are ignored like they were not declared
+    -->
+    <!-- Last month -->
+    <NamedSet name="LM1">
+      <Formula>Tail(Descendants(Time, Time.Month),1)</Formula>
+    </NamedSet>
+     <!-- Last week -->
+    <NamedSet name="LW1">
+      <Formula>Tail(Descendants(Time, Time.Week),1)</Formula>
+    </NamedSet>
   </Cube>
 
   <Cube name="PERFORMANCE_100000">
