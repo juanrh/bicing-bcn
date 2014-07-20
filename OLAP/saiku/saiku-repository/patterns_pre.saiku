@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Query name="8D53D1C4-7567-4E95-A12C-6597A0C5315E" type="QM" connection="phoenix" cube="[BicingBCN]" catalog="Phoenix" schema="Phoenix">
+  <QueryModel>
+    <Axes>
+      <Axis location="ROWS" nonEmpty="true">
+        <Dimensions>
+          <Dimension name="Time" hierarchizeMode="PRE" hierarchyConsistent="true">
+            <Inclusions>
+              <Selection dimension="Time" type="level" node="[Time].[Hour]" operator="MEMBERS" />
+            </Inclusions>
+            <Exclusions />
+          </Dimension>
+        </Dimensions>
+      </Axis>
+      <Axis location="COLUMNS" nonEmpty="true">
+        <Dimensions>
+          <Dimension name="Measures">
+            <Inclusions>
+              <Selection dimension="Measures" type="member" node="[Measures].[AverageBikesAvailable]" operator="MEMBER" />
+              <Selection dimension="Measures" type="member" node="[Measures].[AverageLent]" operator="MEMBER" />
+              <Selection dimension="Measures" type="member" node="[Measures].[AverageReturned]" operator="MEMBER" />
+            </Inclusions>
+            <Exclusions />
+          </Dimension>
+        </Dimensions>
+      </Axis>
+      <Axis location="FILTER" nonEmpty="false">
+        <Dimensions>
+          <Dimension name="StationDistrict">
+            <Inclusions>
+              <Selection dimension="StationDistrict" type="member" node="[StationDistrict].[Ciutat Vella].[La Barceloneta, Barcelona].[08039].[400]" operator="MEMBER" />
+            </Inclusions>
+            <Exclusions />
+          </Dimension>
+        </Dimensions>
+      </Axis>
+    </Axes>
+  </QueryModel>
+  <MDX>SELECT
+NON EMPTY {[Measures].[AverageBikesAvailable], [Measures].[AverageLent], [Measures].[AverageReturned]} ON COLUMNS,
+NON EMPTY {Hierarchize({[Time].[Hour].Members})} ON ROWS
+FROM [BicingBCN]
+WHERE {[StationDistrict].[Ciutat Vella].[La Barceloneta, Barcelona].[08039].[400]}</MDX>
+  <Properties>
+    <Property name="saiku.ui.render.mode" value="chart" />
+    <Property name="org.saiku.query.explain" value="true" />
+    <Property name="saiku.ui.render.type" value="line" />
+    <Property name="saiku.olap.query.nonempty.columns" value="true" />
+    <Property name="saiku.olap.query.nonempty.rows" value="true" />
+    <Property name="org.saiku.connection.scenario" value="false" />
+    <Property name="saiku.olap.query.automatic_execution" value="true" />
+    <Property name="saiku.olap.query.drillthrough" value="true" />
+    <Property name="saiku.olap.query.filter" value="true" />
+    <Property name="saiku.olap.query.limit" value="true" />
+    <Property name="saiku.olap.query.nonempty" value="true" />
+  </Properties>
+</Query>
+

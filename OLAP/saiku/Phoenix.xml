@@ -55,13 +55,15 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
 
   <!-- Single denormalized "Big Table" approach -->
   <Cube name="BicingBCN">
+    <!-- Fact table: this will be the only table in this Big Table approach, in which 
+    all the dimensions are degenerate -->
     <Table name="BICING"/>
     <Dimension name="StationDistrict">
       <Hierarchy hasAll="true" allMemberName="All Districts">
         <Level name="District" column="DISTRICT" uniqueMembers="true" type="String"/>
         <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true" type="String"/>
         <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false" type="String"/>
-        <Level name="StationId" column="STATION" uniqueMembers="false" type="String"/>
+        <Level name="StationId" column="STATION" uniqueMembers="false" type="Numeric"/>
       </Hierarchy>
     </Dimension>
 
@@ -148,14 +150,16 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
     <Measure name="TotalBikesAvailable" column="AVAILABLE" datatype="Numeric" aggregator="sum" formatString="Standard"/>
     <Measure name="TotalBikeSlots" column="SLOTS" datatype="Numeric" aggregator="sum" formatString="Standard"/>
     <Measure name="TotalCapacity" column="CAPACITY" datatype="Numeric" aggregator="sum" formatString="Standard"/>
-    <Measure name="TotalLent" column="LENT" datatype="Numeric" aggregator="sum" formatString="Standard"/>
-    <Measure name="TotalReturned" column="RETURNED" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalBikesLent" column="LENT" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalBikesReturned" column="RETURNED" datatype="Numeric" aggregator="sum" formatString="Standard"/>
 
     <Measure name="AverageBikesAvailable" column="AVAILABLE" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageBikeSlots" column="SLOTS" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageCapacity" column="CAPACITY" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageLent" column="LENT" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageReturned" column="RETURNED" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+
+    <Measure name="TotalStationCount" column="STATION"  aggregator="distinct-count" formatString="Standard"/>
 
     <!-- As an alternative to a CurrentTime dimension, we define Named Sets that can be later used 
     in MDX custom statements  
