@@ -1,34 +1,68 @@
 <?xml version="1.0"?>
 <Schema name="Phoenix">
+<!--  <Cube name="BicingBCN">
+    <Table name="BICING_FACT"/> -->
+    <!-- Using a single table based on views doesn't work because Phoenix doesn't support 
+    nested queries: 
+https://github.com/forcedotcom/phoenix/issues/5
+org.apache.phoenix.parse.DerivedTableNode cannot be cast to org.apache.phoenix.parse.NamedTableNode
+  
+    <View alias="BICING"> 
+       <SQL dialect="generic">
+       <![CDATA[SELECT * 
+FROM "BICING_FACT" 
+ INNER JOIN "BICING_DIM_STATION"
+   ON "BICING_FACT"."STATION" = "BICING_DIM_STATION"."ID" 
+ INNER JOIN "BICING_DIM_TIME"   
+   ON "BICING_FACT"."TIMETAG" = "BICING_DIM_TIME"."TIMETAG"]]> 
+      </SQL> 
+   </View>
+   <Dimension name="Station">
+      <Hierarchy hasAll="true" allMemberName="All Districts">
+        <Level name="District" column="DISTRICT" uniqueMembers="true"/>
+        <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true"/>
+        <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension>
+    -->
+    <!-- 
+http://mondrian.pentaho.com/documentation/schema.php: 3.3.1 Mapping dimensions and hierarchies onto tables 
+The <Dimension> element has a foreignKey attribute, which is the name of a column in the fact table; the <Hierarchy> element has a primaryKey attribute.
+    -->
+
+    <!--
+    Using a standard approach for Mondrian fails with "SQLFeatureNotSupportedException: Implicit joins not supported.", 
+    because Phoenix doesn't support implicit join like the one in this error
+
+    Caused by: mondrian.olap.MondrianException: Mondrian Error:Internal error: Error while loading segment; sql=[select "BICING_DIM_STATION"."DISTRICT" as "c0", sum("BICING_FACT"."AVAILABLE") as "m0" from "BICING_DIM_STATION" as "BICING_DIM_STATION", "BICING_FACT" as "BICING_FACT" where "BICING_FACT"."STATION" = "BICING_DIM_STATION"."ID" group by "BICING_DIM_STATION"."DISTRICT"]
+     -->
+     <!-- 
+    <Dimension name="Station" foreignKey="STATION">
+      <Hierarchy hasAll="true" allMemberName="All Districts" primaryKey="ID">  
+      <Table name="BICING_DIM_STATION"/>
+        <Level name="District" column="DISTRICT" uniqueMembers="true"/>
+        <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true"/>
+        <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false"/>
+      </Hierarchy>
+    </Dimension> 
+    <Measure name="BikesAvailable" column="AVAILABLE" aggregator="sum" formatString="Standard"/>
+  </Cube> -->
+
+  <!-- Single denormalized "Big Table" approach -->
   <Cube name="BicingBCN">
-    <Table name="PERFORMANCE_100000_PROC"/>
-    <Dimension name="HOST">
-      <Hierarchy hasAll="true" allMemberName="All Types">
-        <Level name="HOST" column="HOST" uniqueMembers="false"/>
+    <Table name="BICING"/>
+    <Dimension name="Geo">
+      <Hierarchy hasAll="true" allMemberName="All Districts">
+        <Level name="District" column="DISTRICT" uniqueMembers="true"/>
+        <Level name="Neighborhood" column="NEIGHBORHOOD" uniqueMembers="true"/>
+        <Level name="PostalCode" column="POSTAL_CODE" uniqueMembers="false"/>
       </Hierarchy>
     </Dimension>
-    <Dimension name="DOMAIN">
-      <Hierarchy hasAll="true" allMemberName="All Types">
-        <Level name="DOMAIN" column="DOMAIN" uniqueMembers="false"/>
-      </Hierarchy>
-    </Dimension>
-    <Dimension name="FEATURE">
-      <Hierarchy hasAll="true" allMemberName="All Types">
-        <Level name="FEATURE" column="FEATURE" uniqueMembers="false"/>
-      </Hierarchy>
-    </Dimension>
-    <Dimension name="DATE">
-       <Hierarchy hasAll="true" allMemberName="All Types">
-         <Level name="DAY" column="DATE_DAY" uniqueMembers="false"/>
-       </Hierarchy>
-    </Dimension>
-    <Measure name="CORE" column="CORE" aggregator="sum" formatString="Standard"/>
-    <Measure name="DB" column="DB" aggregator="sum" formatString="Standard"/>
-    <Measure name="ACTIVE_VISITOR" column="ACTIVE_VISITOR" aggregator="sum" formatString="Standard"/>
+    <Measure name="BikesAvailable" column="AVAILABLE" aggregator="sum" formatString="Standard"/>
   </Cube>
 
-  <Cube name="PERFORMANCE_1000000_PROC">
-    <Table name="PERFORMANCE_1000000_PROC"/>
+  <Cube name="PERFORMANCE_100000">
+    <Table name="PERFORMANCE_100000"/>
     <Dimension name="HOST">
       <Hierarchy hasAll="true" allMemberName="All Types">
         <Level name="HOST" column="HOST" uniqueMembers="false"/>
@@ -46,7 +80,7 @@
     </Dimension>
     <Dimension name="DATE">
        <Hierarchy hasAll="true" allMemberName="All Types">
-         <Level name="DAY" column="DATE_DAY" uniqueMembers="false"/>
+         <Level name="DATE" column="DATE" uniqueMembers="false"/>
        </Hierarchy>
     </Dimension>
     <Measure name="CORE" column="CORE" aggregator="sum" formatString="Standard"/>
