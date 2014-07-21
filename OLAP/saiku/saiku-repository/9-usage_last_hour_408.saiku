@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Query name="5E6A5601-0FF7-1D37-9F03-F6E460518B1B" type="MDX" connection="phoenix" cube="[BicingBCN]" catalog="Phoenix" schema="Phoenix">
+  <MDX>WITH 
+    SET LH1 AS 'Tail(Descendants(Time, Time.Hour),1)'
+SELECT
+NON EMPTY {[Measures].[AverageBikesAvailable], [Measures].[AverageLent], [Measures].[AverageReturned]} ON COLUMNS,
+NON EMPTY {Hierarchize({Filter({{[Time].[Minute].Members}}, (Exists(Ancestor([Time].CurrentMember, [Time].[Hour]), {LH1}).Count  &gt; 0))})} ON ROWS
+FROM [BicingBCN]
+WHERE {[StationDistrict].[Sant Marti].[La Vila Olímpica del Poblenou].[08005].[408]}</MDX>
+  <Properties>
+    <Property name="saiku.ui.render.mode" value="chart" />
+    <Property name="org.saiku.query.explain" value="true" />
+    <Property name="saiku.ui.render.type" value="line" />
+    <Property name="saiku.olap.query.nonempty.columns" value="true" />
+    <Property name="saiku.olap.query.nonempty.rows" value="true" />
+    <Property name="org.saiku.connection.scenario" value="false" />
+    <Property name="saiku.olap.query.automatic_execution" value="true" />
+    <Property name="saiku.olap.query.drillthrough" value="true" />
+    <Property name="saiku.olap.query.nonempty" value="true" />
+  </Properties>
+</Query>
+
