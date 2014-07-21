@@ -120,13 +120,15 @@ CREATE TABLE IF NOT EXISTS BICING (
     -- Number of bikes returned to this station since 
     -- the previous update
     F.RETURNED UNSIGNED_LONG,
+    --- Traffic as F.LENT + F.RETURNED, i.e. number of transactions
+    F.TRAFFIC  UNSIGNED_LONG,
     --
     -- Station dimension fields
     --
-    -- geo info
-    S.LONGITUDE UNSIGNED_DOUBLE,
-    S.LATITUDE UNSIGNED_DOUBLE,
-    S.HEIGH UNSIGNED_LONG,
+    -- geo info: dropped as not used
+    -- S.LONGITUDE UNSIGNED_DOUBLE,
+    -- S.LATITUDE UNSIGNED_DOUBLE,
+    -- S.HEIGH UNSIGNED_LONG,
     -- human readable location 
     S.DISTRICT VARCHAR,
     S.NEIGHBORHOOD VARCHAR,
@@ -136,6 +138,13 @@ CREATE TABLE IF NOT EXISTS BICING (
     S.POP_DENSITY UNSIGNED_DOUBLE,
     S.POPULATION UNSIGNED_LONG,
     S.SIZE UNSIGNED_DOUBLE,
+    -- ranges for the district info, or it is useless
+    -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+    S.POP_DENSITY_RANGE VARCHAR,
+    -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+    S.POP_RANGE VARCHAR,
+    -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+    S.SIZE_RANGE VARCHAR,
     --
     -- Time dimension fields
     -- small values, all in the same column

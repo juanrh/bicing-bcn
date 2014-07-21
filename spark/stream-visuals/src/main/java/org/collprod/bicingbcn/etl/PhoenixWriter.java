@@ -143,8 +143,86 @@ public class PhoenixWriter implements Serializable {
 	 * @throws SQLException 
 	 * */
 	public PreparedStatement buildBicingBigTableStatement(Connection con) throws SQLException {
-		String upsertBicingBigTableString = "UPSERT INTO BICING VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String upsertBicingBigTableString = "UPSERT INTO BICING VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		return con.prepareStatement(upsertBicingBigTableString);
+	}
+	
+	/**
+	 *  -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+		   S.POP_DENSITY_RANGE VARCHAR,
+	 * */
+	private static Optional<String> getDistrictPopulationDensityRange(DimStationRecord stationDimStationInfo) {
+		if (! stationDimStationInfo.popDensity().isPresent()) {
+			return Optional.absent();
+		}
+		
+		double populationDensity = stationDimStationInfo.popDensity().get();
+		
+		if (populationDensity < 10) {
+			return Optional.of("[0 - 10)");
+		}
+		if (populationDensity >= 10 && populationDensity < 15) {
+			return Optional.of("[10 - 15)");
+		}
+		if (populationDensity >= 15 && populationDensity < 20) {
+			return Optional.of("[15 - 20)");
+		}	
+		if (populationDensity >= 20 && populationDensity < 25) {
+			return Optional.of("[20 - 25)");
+		}		
+		if (populationDensity >= 25 && populationDensity < 30) {
+			return Optional.of("[25 - 30)");
+		}		
+		return Optional.of("30+");
+	}
+	
+	/**
+	 *   -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+		    S.POP_RANGE VARCHAR,
+	 * */
+	private static Optional<String> getDistrictPopulationRange(DimStationRecord stationDimStationInfo) {
+		if (! stationDimStationInfo.population().isPresent()) {
+			return Optional.absent();
+		}
+		
+		double population = stationDimStationInfo.population().get();
+		
+		if (population < 100) {
+			return Optional.of("[0 - 100)");
+		}
+		if (population >= 100 && population < 150) {
+			return Optional.of("[100 - 150)");
+		}
+		if (population >= 150 && population < 200) {
+			return Optional.of("[150 - 20)");
+		}	
+		return Optional.of("200+");
+	}
+	
+	/**
+	 *  -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+		   S.SIZE_RANGE VARCHAR,
+	 * */
+	private static Optional<String> getDistrictSizeRange(DimStationRecord stationDimStationInfo) {
+		if (! stationDimStationInfo.size().isPresent()) {
+			return Optional.absent();
+		}
+		
+		double districtSize = stationDimStationInfo.size().get();
+		
+		if (districtSize < 5) {
+			return Optional.of("[0 - 5)");
+		}
+		if (districtSize >= 5 && districtSize < 10) {
+			return Optional.of("[5 - 10)");
+		}
+		if (districtSize >= 10 && districtSize < 15) {
+			return Optional.of("[10 - 15)");
+		}	
+		if (districtSize >= 15 && districtSize < 20) {
+			return Optional.of("[15 - 20)");
+		}	
+		return Optional.of("20+");
 	}
 	
 	
@@ -158,6 +236,99 @@ public class PhoenixWriter implements Serializable {
 	 * This method is not responsible for closing any statement
 	 * 
 	 * NOTE: The field slots is not used for computing the number of bikes lent and
+	 
+			CREATE TABLE IF NOT EXISTS BICING (
+			    -- Keys
+			    ---
+			    -- station to which the data for this row applies
+		1.	    STATION UNSIGNED_LONG NOT NULL,
+			    -- native apache phoenix meaning: The format is yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]
+			    -- Mapped to java.sql.Timestamp with an internal representation 
+			    -- of the number of nanos from the epoch
+		2.	    TIMETAG TIMESTAMP NOT NULL,
+			    --
+			    -- Fact fields
+			    --
+			    -- Degenerate dimension: 'OPN' (open) or 'CLS' (closed)
+		3.	    F.STATUS VARCHAR(3),
+			    -- Number of parking slots available: should be 0 
+			    -- if F.STATUS is "CLS"
+		4.	    F.SLOTS UNSIGNED_LONG,
+			    -- Number of bikes available: should be 0 
+			    -- if F.STATUS is "CLS"
+		5.	    F.AVAILABLE UNSIGNED_LONG,
+			    -- Total capacity of the station as (parking slots
+			    -- + bikes) * (status == OPN)
+		6.	    F.CAPACITY UNSIGNED_LONG,
+			    -- Number of bikes lent for this station since 
+			    -- the previous update
+		7.	    F.LENT UNSIGNED_LONG,
+			    -- Number of bikes returned to this station since 
+			    -- the previous update
+		8.	    F.RETURNED UNSIGNED_LONG,
+			    --- Traffic as F.LENT + F.RETURNED, i.e. number of trasactions
+		9.	    F.TRAFFIC  UNSIGNED_LONG,
+			    --
+			    -- Station dimension fields
+			    --
+			    -- geo info: dropped as not used
+			    -- S.LONGITUDE UNSIGNED_DOUBLE,
+			    -- S.LATITUDE UNSIGNED_DOUBLE,
+			    -- S.HEIGH UNSIGNED_LONG,
+			    -- human readable location 
+		10.	    S.DISTRICT VARCHAR,
+		11.	    S.NEIGHBORHOOD VARCHAR,
+		12.	    S.POSTAL_CODE VARCHAR,
+		13.	    S.ADDRESS VARCHAR,
+			    -- district info
+		14.	    S.POP_DENSITY UNSIGNED_DOUBLE,
+		15.	    S.POPULATION UNSIGNED_LONG,
+		16.	    S.SIZE UNSIGNED_DOUBLE,
+			    -- ranges for the district info, or it is useless
+			    -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+		17.	    S.POP_DENSITY_RANGE VARCHAR,
+			    -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+		18.	    S.POP_RANGE VARCHAR,
+			    -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+		19.	    S.SIZE_RANGE VARCHAR,
+			    --
+			    -- Time dimension fields
+			    -- small values, all in the same column
+			    -- 0 to 59
+		20.	    T.MINUTE UNSIGNED_TINYINT, 
+			    -- 0 to 23
+		21.	    T.HOUR UNSIGNED_TINYINT, 
+			    -- VALUES: '[04:00 - 08:00)', '[08:00 - 12:00)', 
+			    --         '[12:00 - 16:00)', '[16:00 - 20:00)', 
+			    --         '[20:00 - 00:00)', '[00:00 - 04:00)'
+		22.	    T.DAYSIXTH VARCHAR(15),
+			    -- Day parts: http://en.wikipedia.org/wiki/Rush_hour
+			    -- VALUE: 'GO-WORK' (rush hour going to work: [06:00 - 10:00)), 
+			    -- 'MORNING' ([10:00 - 13:00)), 'LUNCH' (spanish lunch [13:00, 15:00)),
+			    -- 'AFTERNOON' (afternoon, [15:00 - 17:00), 'BACK-HOME' (spanish rush hour for 
+			    -- going back home: [17:00 - 19:00), 'NIGHT' [19:00, 06:00)
+		23.	    T.PART VARCHAR(9),
+			    -- 1 to 30
+		24.	    T.MONTH_DAY UNSIGNED_TINYINT, 
+			    -- 1 to 365
+		25.	    T.YEAR_DAY UNSIGNED_SMALLINT, 
+			    -- 1 to 5
+		26.	    T.MONTH_WEEK UNSIGNED_TINYINT, 
+			    -- 1 to 53
+		27.	    T.YEAR_WEEK UNSIGNED_TINYINT, 
+			    -- 1 to 12
+		28.	    T.MONTH UNSIGNED_TINYINT, 
+			    -- 1 to 4
+		29.	    T.TRIMESTER UNSIGNED_TINYINT, 
+			    -- e.g. 2014
+		30.	    T.YEAR UNSIGNED_SMALLINT
+			
+			    -- This gives a non monotonically increasing row key
+			    CONSTRAINT PK PRIMARY KEY (STATION, TIMETAG)
+			);
+
+ 
+ 		Old Schema: FIXME delete
 			CREATE TABLE IF NOT EXISTS BICING (
 			    -- Keys
 			    ---
@@ -275,14 +446,19 @@ public class PhoenixWriter implements Serializable {
 		//  - if lastBikeCount is negative then we don't have info and we return as nothing
 		// 	- if we have more bikes now than in the previous update we assume no bike has been lent,  
 		//    this implies an error if bikes are returned and taken between updates
-		stmtBicingBigTable.setInt(7, notValidState ? 0 : Math.max(lastBikeCount - stationInfo.bikes(), 0));
-		
-		
+		long lent = notValidState ? 0 : Math.max(lastBikeCount - stationInfo.bikes(), 0);
+		stmtBicingBigTable.setLong(7, lent);
+				
 		// -- Number of bikes returned to this station since 
 		// -- the previous update
 		// 8.	    F.RETURNED UNSIGNED_LONG,
 		// same compromises as the previous value
-		stmtBicingBigTable.setInt(8, notValidState ? 0 : Math.max(stationInfo.bikes() - lastBikeCount, 0));
+		long returned =  notValidState ? 0 : Math.max(stationInfo.bikes() - lastBikeCount, 0);
+		stmtBicingBigTable.setLong(8, returned);
+		
+	    // --- Traffic as F.LENT + F.RETURNED, i.e. number of transactions
+		// 9.	    F.TRAFFIC  UNSIGNED_LONG,
+		stmtBicingBigTable.setLong(9, lent + returned);
 				
 		//	    --
 		//	    -- Station dimension fields
@@ -291,136 +467,148 @@ public class PhoenixWriter implements Serializable {
 		// table BICING_DIM_STATION uses UNSIGNED_LONG
 		DimStationRecord stationDimStationInfo = lookupStationRecord(stmtGetStationInfo, (long) stationInfo.id());
 		
-		//	    -- geo info
-		
-		//9.	    S.LONGITUDE UNSIGNED_DOUBLE,
-		if (stationDimStationInfo.longitude().isPresent()) {
-			stmtBicingBigTable.setDouble(9, stationDimStationInfo.longitude().get());
-		} else {
-			stmtBicingBigTable.setNull(9, java.sql.Types.DOUBLE);
-		}
-			
-		//10.	    S.LATITUDE UNSIGNED_DOUBLE,
-		if (stationDimStationInfo.latitude().isPresent()) {
-			stmtBicingBigTable.setDouble(10, stationDimStationInfo.latitude().get());
-		} else {
-			stmtBicingBigTable.setNull(10, java.sql.Types.DOUBLE);
-		}
-		
-		//11.	    S.HEIGH UNSIGNED_LONG,
-		if (stationDimStationInfo.heigh().isPresent()) {
-			stmtBicingBigTable.setLong(11, stationDimStationInfo.heigh().get());
-		} else {
-			stmtBicingBigTable.setNull(11, java.sql.Types.INTEGER);
-		}
-		
+		 // -- geo info: dropped as not used
+		 // -- S.LONGITUDE UNSIGNED_DOUBLE,
+		 // -- S.LATITUDE UNSIGNED_DOUBLE,
+		 // -- S.HEIGH UNSIGNED_LONG,
+
 		//	    -- human readable location 
 		
-		//12.	    S.DISTRICT VARCHAR,
+		//10.	    S.DISTRICT VARCHAR,
 		if (stationDimStationInfo.district().isPresent()) {
-			stmtBicingBigTable.setString(12, stationDimStationInfo.district().get());
+			stmtBicingBigTable.setString(10, stationDimStationInfo.district().get());
+		} else {
+			stmtBicingBigTable.setNull(10, java.sql.Types.VARCHAR);
+		}
+		
+		//11.	    S.NEIGHBORHOOD VARCHAR,
+		if (stationDimStationInfo.neighborhood().isPresent()) {
+			stmtBicingBigTable.setString(11, stationDimStationInfo.neighborhood().get());
+		} else {
+			stmtBicingBigTable.setNull(11, java.sql.Types.VARCHAR);
+		}
+		
+		//12.	    S.POSTAL_CODE VARCHAR,
+		if (stationDimStationInfo.postalCode().isPresent()) {
+			stmtBicingBigTable.setString(12, stationDimStationInfo.postalCode().get());
 		} else {
 			stmtBicingBigTable.setNull(12, java.sql.Types.VARCHAR);
 		}
 		
-		//13.	    S.NEIGHBORHOOD VARCHAR,
-		if (stationDimStationInfo.neighborhood().isPresent()) {
-			stmtBicingBigTable.setString(13, stationDimStationInfo.neighborhood().get());
+		//13.	    S.ADDRESS VARCHAR,
+		if (stationDimStationInfo.address().isPresent()) {
+			stmtBicingBigTable.setString(13, stationDimStationInfo.address().get());
 		} else {
 			stmtBicingBigTable.setNull(13, java.sql.Types.VARCHAR);
 		}
 		
-		//14.	    S.POSTAL_CODE VARCHAR,
-		if (stationDimStationInfo.postalCode().isPresent()) {
-			stmtBicingBigTable.setString(14, stationDimStationInfo.postalCode().get());
-		} else {
-			stmtBicingBigTable.setNull(14, java.sql.Types.VARCHAR);
-		}
-		
-		//15.	    S.ADDRESS VARCHAR,
-		if (stationDimStationInfo.address().isPresent()) {
-			stmtBicingBigTable.setString(15, stationDimStationInfo.address().get());
-		} else {
-			stmtBicingBigTable.setNull(15, java.sql.Types.VARCHAR);
-		}
-		
 		//	    -- district info
 		
-		//16.	    S.POP_DENSITY UNSIGNED_DOUBLE,
+		//14.	    S.POP_DENSITY UNSIGNED_DOUBLE,
 		if (stationDimStationInfo.popDensity().isPresent()) {
-			stmtBicingBigTable.setDouble(16, stationDimStationInfo.popDensity().get());
+			stmtBicingBigTable.setDouble(14, stationDimStationInfo.popDensity().get());
+		} else {
+			stmtBicingBigTable.setNull(14, java.sql.Types.DOUBLE);
+		}
+		
+		//15.	    S.POPULATION UNSIGNED_LONG,
+		if (stationDimStationInfo.population().isPresent()) {
+			stmtBicingBigTable.setLong(15, stationDimStationInfo.population().get());
+		} else {
+			stmtBicingBigTable.setNull(15, java.sql.Types.INTEGER);
+		}
+		
+		//16.	    S.SIZE UNSIGNED_DOUBLE,
+		if (stationDimStationInfo.size().isPresent()) {
+			stmtBicingBigTable.setDouble(16, stationDimStationInfo.size().get());
 		} else {
 			stmtBicingBigTable.setNull(16, java.sql.Types.DOUBLE);
 		}
 		
-		//17.	    S.POPULATION UNSIGNED_LONG,
-		if (stationDimStationInfo.population().isPresent()) {
-			stmtBicingBigTable.setLong(17, stationDimStationInfo.population().get());
+	    // -- ranges for the district info, or it is useless
+		// FIXME: this should better be computed in the station fact table
+		// 
+	    // -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+		//  17.	    S.POP_DENSITY_RANGE VARCHAR,
+		Optional<String> populationDensityRange = PhoenixWriter.getDistrictPopulationDensityRange(stationDimStationInfo);
+		if (populationDensityRange.isPresent()) {
+			stmtBicingBigTable.setString(17, populationDensityRange.get());
 		} else {
-			stmtBicingBigTable.setNull(17, java.sql.Types.INTEGER);
+			stmtBicingBigTable.setNull(17, java.sql.Types.VARCHAR);
 		}
 		
-		//18.	    S.SIZE UNSIGNED_DOUBLE,
-		if (stationDimStationInfo.size().isPresent()) {
-			stmtBicingBigTable.setDouble(18, stationDimStationInfo.size().get());
+		// -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+		// 18.	    S.POP_RANGE VARCHAR,
+		Optional<String> populationRange = PhoenixWriter.getDistrictPopulationRange(stationDimStationInfo);
+		if (populationRange.isPresent()) {
+			stmtBicingBigTable.setString(18, populationRange.get());
 		} else {
-			stmtBicingBigTable.setNull(18, java.sql.Types.DOUBLE);
+			stmtBicingBigTable.setNull(18, java.sql.Types.VARCHAR);
 		}
 		
+	    // -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+		// 19.	    S.SIZE_RANGE VARCHAR,
+		Optional<String> sizeRange = PhoenixWriter.getDistrictSizeRange(stationDimStationInfo);
+		if (sizeRange.isPresent()) {
+			stmtBicingBigTable.setString(19, sizeRange.get());
+		} else {
+			stmtBicingBigTable.setNull(19, java.sql.Types.VARCHAR);
+		}
+						
 		//	    -- Time dimension fields
 		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime() * 1000));
 		// Joda time doesn't support week of month
 		SimpleDateFormat weekOfMonthFormat = new SimpleDateFormat("W");
 		
 		//	    -- 0 to 59
-		//19.	    T.MINUTE UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(19, stationTimetagDatetime.getMinuteOfHour());
+		//20.	    T.MINUTE UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(20, stationTimetagDatetime.getMinuteOfHour());
 		
 		//	    -- 0 to 23
-		//20.	    T.HOUR UNSIGNED_TINYINT, 
-		stmtBicingBigTable.setInt(20, stationTimetagDatetime.getHourOfDay());
+		//21.	    T.HOUR UNSIGNED_TINYINT, 
+		stmtBicingBigTable.setInt(21, stationTimetagDatetime.getHourOfDay());
 		
 		//	    -- VALUES: '[04:00 - 08:00)', '[08:00 - 12:00)', 
 		//	    --         '[12:00 - 16:00)', '[16:00 - 20:00)', 
 		//	    --         '[20:00 - 00:00)', '[00:00 - 04:00)'
-		//21.	    T.DAYSIXTH VARCHAR(15),
-		stmtBicingBigTable.setString(21, dateToDaySixth(stationTimetagDatetime));
+		//22.	    T.DAYSIXTH VARCHAR(15),
+		stmtBicingBigTable.setString(22, dateToDaySixth(stationTimetagDatetime));
 		
 		//	    -- Day parts: http://en.wikipedia.org/wiki/Rush_hour
 		//	    -- VALUE: 'GO-WORK' (rush hour going to work: [06:00 - 10:00)), 
 		//	    -- 'MORNING' ([10:00 - 13:00)), 'LUNCH' (spanish lunch [13:00, 15:00)),
 		//	    -- 'AFTERNOON' (afternoon, [15:00 - 17:00), 'BACK-HOME' (spanish rush hour for 
 		//	    -- going back home: [17:00 - 19:00), 'NIGHT' [19:00, 06:00)
-		//22.	    T.PART VARCHAR(9),
-		stmtBicingBigTable.setString(22, dateToDayParts(stationTimetagDatetime));
+		//23.	    T.PART VARCHAR(9),
+		stmtBicingBigTable.setString(23, dateToDayParts(stationTimetagDatetime));
 		
 		//	    -- 1 to 30
-		//23.	    T.MONTH_DAY UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(23, stationTimetagDatetime.getDayOfMonth());
+		//24.	    T.MONTH_DAY UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(24, stationTimetagDatetime.getDayOfMonth());
 		
 		//	    -- 1 to 365
-		//24.	    T.YEAR_DAY UNSIGNED_SMALLINT,
-		stmtBicingBigTable.setInt(24, stationTimetagDatetime.getDayOfYear());
+		//25.	    T.YEAR_DAY UNSIGNED_SMALLINT,
+		stmtBicingBigTable.setInt(25, stationTimetagDatetime.getDayOfYear());
 		
 		//	    -- 1 to 5
-		//25.	    T.MONTH_WEEK UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(25, Integer.parseInt(weekOfMonthFormat.format(stationTimetagDatetime.toDate())));
+		//26.	    T.MONTH_WEEK UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(26, Integer.parseInt(weekOfMonthFormat.format(stationTimetagDatetime.toDate())));
 		
 		//	    -- 1 to 53
-		//26.	    T.YEAR_WEEK UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(26, stationTimetagDatetime.getWeekOfWeekyear());
+		//27.	    T.YEAR_WEEK UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(27, stationTimetagDatetime.getWeekOfWeekyear());
 		
 		//	    -- 1 to 12
-		//27.	    T.MONTH UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(27, stationTimetagDatetime.getMonthOfYear());
+		//28.	    T.MONTH UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(28, stationTimetagDatetime.getMonthOfYear());
 		
 		//	    -- 1 to 4
-		//28.	    T.TRIMESTER UNSIGNED_TINYINT,
-		stmtBicingBigTable.setInt(28, (int) Math.floor((stationTimetagDatetime.getMonthOfYear() - 1) / 3) + 1);
+		//29.	    T.TRIMESTER UNSIGNED_TINYINT,
+		stmtBicingBigTable.setInt(29, (int) Math.floor((stationTimetagDatetime.getMonthOfYear() - 1) / 3) + 1);
 		
 		//	    -- e.g. 2014
-		//29.	    T.YEAR UNSIGNED_SMALLINT
-		stmtBicingBigTable.setInt(29, stationTimetagDatetime.getYear());
+		//30.	    T.YEAR UNSIGNED_SMALLINT
+		stmtBicingBigTable.setInt(30, stationTimetagDatetime.getYear());
 	}
 	
 	
