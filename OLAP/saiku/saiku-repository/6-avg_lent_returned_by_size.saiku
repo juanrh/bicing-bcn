@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Query name="822CE6F0-EA4A-B947-8D2E-FAE188AC7E3E" type="QM" connection="phoenix" cube="[BicingBCN]" catalog="Phoenix" schema="Phoenix">
+  <QueryModel>
+    <Axes>
+      <Axis location="ROWS" nonEmpty="true" sortOrder="BASC" sortEvaluationLiteral="[DistrictDemography.DistricSize].CurrentMember.Name">
+        <Dimensions>
+          <Dimension name="DistrictDemography" hierarchizeMode="PRE" hierarchyConsistent="true">
+            <Inclusions>
+              <Selection dimension="DistrictDemography" type="level" node="[DistrictDemography.DistricSize].[SizeRange]" operator="MEMBERS" />
+            </Inclusions>
+            <Exclusions />
+          </Dimension>
+        </Dimensions>
+      </Axis>
+      <Axis location="COLUMNS" nonEmpty="true">
+        <Dimensions>
+          <Dimension name="Measures">
+            <Inclusions>
+              <Selection dimension="Measures" type="member" node="[Measures].[AverageLent]" operator="MEMBER" />
+              <Selection dimension="Measures" type="member" node="[Measures].[AverageReturned]" operator="MEMBER" />
+            </Inclusions>
+            <Exclusions />
+          </Dimension>
+        </Dimensions>
+      </Axis>
+      <Axis location="FILTER" nonEmpty="false" />
+    </Axes>
+  </QueryModel>
+  <MDX>SELECT
+NON EMPTY {[Measures].[AverageLent], [Measures].[AverageReturned]} ON COLUMNS,
+NON EMPTY Order({Hierarchize({[DistrictDemography.DistricSize].[SizeRange].Members})}, [DistrictDemography.DistricSize].CurrentMember.Name, BASC) ON ROWS
+FROM [BicingBCN]</MDX>
+  <Properties>
+    <Property name="saiku.ui.render.mode" value="chart" />
+    <Property name="org.saiku.query.explain" value="true" />
+    <Property name="saiku.ui.render.type" value="area" />
+    <Property name="saiku.olap.query.nonempty.columns" value="true" />
+    <Property name="saiku.olap.query.nonempty.rows" value="true" />
+    <Property name="org.saiku.connection.scenario" value="false" />
+    <Property name="saiku.olap.query.automatic_execution" value="false" />
+    <Property name="saiku.olap.query.drillthrough" value="true" />
+    <Property name="saiku.olap.query.filter" value="true" />
+    <Property name="saiku.olap.query.limit" value="true" />
+    <Property name="saiku.olap.query.nonempty" value="true" />
+  </Properties>
+</Query>
+

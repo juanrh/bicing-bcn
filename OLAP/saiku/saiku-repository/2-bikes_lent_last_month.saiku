@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Query name="0FC24A37-18F1-1003-8C5C-E75AFF319521" type="MDX" connection="phoenix" cube="[BicingBCN]" catalog="Phoenix" schema="Phoenix">
+  <MDX>SELECT
+NON EMPTY CrossJoin([DaySplits.DaySixths].[DaySixth].Members, {[Measures].[TotalBikesLent]}) ON COLUMNS,
+NON EMPTY Order({Hierarchize({[StationDistrict].[StationId].Members})}, [Measures].[TotalBikesLent], BDESC) ON ROWS
+FROM [BicingBCN]
+WHERE {LM1}</MDX>
+  <Properties>
+    <Property name="saiku.olap.query.nonempty" value="true" />
+    <Property name="saiku.olap.query.nonempty.rows" value="true" />
+    <Property name="org.saiku.query.explain" value="true" />
+    <Property name="org.saiku.connection.scenario" value="false" />
+    <Property name="saiku.ui.render.mode" value="chart" />
+    <Property name="saiku.olap.query.nonempty.columns" value="true" />
+    <Property name="saiku.olap.query.drillthrough" value="true" />
+    <Property name="saiku.olap.query.automatic_execution" value="true" />
+  </Properties>
+</Query>
+
