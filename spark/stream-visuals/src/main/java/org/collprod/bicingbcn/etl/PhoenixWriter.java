@@ -148,7 +148,7 @@ public class PhoenixWriter implements Serializable {
 	}
 	
 	/**
-	 *  -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+	 *  -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), [30+ (thousands)
 		   S.POP_DENSITY_RANGE VARCHAR,
 	 * */
 	private static Optional<String> getDistrictPopulationDensityRange(DimStationRecord stationDimStationInfo) {
@@ -173,11 +173,11 @@ public class PhoenixWriter implements Serializable {
 		if (populationDensity >= 25 && populationDensity < 30) {
 			return Optional.of("[25 - 30)");
 		}		
-		return Optional.of("30+");
+		return Optional.of("[30+");
 	}
 	
 	/**
-	 *   -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+	 *   -- [0 - 100), [100 - 150), [150 - 200), [200+ (thousands) 
 		    S.POP_RANGE VARCHAR,
 	 * */
 	private static Optional<String> getDistrictPopulationRange(DimStationRecord stationDimStationInfo) {
@@ -196,11 +196,11 @@ public class PhoenixWriter implements Serializable {
 		if (population >= 150 && population < 200) {
 			return Optional.of("[150 - 20)");
 		}	
-		return Optional.of("200+");
+		return Optional.of("[200+");
 	}
 	
 	/**
-	 *  -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+	 *  -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), [20+  (m2) 
 		   S.SIZE_RANGE VARCHAR,
 	 * */
 	private static Optional<String> getDistrictSizeRange(DimStationRecord stationDimStationInfo) {
@@ -222,7 +222,7 @@ public class PhoenixWriter implements Serializable {
 		if (districtSize >= 15 && districtSize < 20) {
 			return Optional.of("[15 - 20)");
 		}	
-		return Optional.of("20+");
+		return Optional.of("[20+");
 	}
 	
 	

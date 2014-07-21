@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Query name="2D21A388-5902-6D31-90CF-87E19433D3FD" type="MDX" connection="phoenix" cube="[BicingBCN]" catalog="Phoenix" schema="Phoenix">
+  <MDX>SELECT
+NON EMPTY {[Measures].[AverageBikesAvailable], [Measures].[TotalTraffic]} ON COLUMNS,
+NON EMPTY Order(Order({Hierarchize({[StationDistrict].[District].Members})}, [Measures].[TotalTraffic],BDESC), [Measures].[AverageBikesAvailable], BASC) ON ROWS
+FROM [BicingBCN]
+WHERE {LM1}</MDX>
+  <Properties>
+    <Property name="saiku.ui.render.mode" value="chart" />
+    <Property name="org.saiku.query.explain" value="true" />
+    <Property name="saiku.ui.render.type" value="bar" />
+    <Property name="saiku.olap.query.nonempty.columns" value="true" />
+    <Property name="saiku.olap.query.nonempty.rows" value="true" />
+    <Property name="org.saiku.connection.scenario" value="false" />
+    <Property name="saiku.olap.query.automatic_execution" value="true" />
+    <Property name="saiku.olap.query.drillthrough" value="true" />
+    <Property name="saiku.olap.query.nonempty" value="true" />
+  </Properties>
+</Query>
+

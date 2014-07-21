@@ -139,11 +139,11 @@ CREATE TABLE IF NOT EXISTS BICING (
     S.POPULATION UNSIGNED_LONG,
     S.SIZE UNSIGNED_DOUBLE,
     -- ranges for the district info, or it is useless
-    -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), 30+ (thousands)
+    -- [0 - 10), [10 - 15), [15 - 20), [20 - 25), [25 - 30), [30+ (thousands)
     S.POP_DENSITY_RANGE VARCHAR,
-    -- [0 - 100), [100 - 150), [150 - 200), 200+ (thousands) 
+    -- [0 - 100), [100 - 150), [150 - 200), [200+ (thousands) 
     S.POP_RANGE VARCHAR,
-    -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), 20+  (m2) 
+    -- [0 - 5), [5 - 10), [10 - 15), [15 - 20), [20+  (m2) 
     S.SIZE_RANGE VARCHAR,
     --
     -- Time dimension fields
