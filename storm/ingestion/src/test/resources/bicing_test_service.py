@@ -18,7 +18,7 @@ class BicingSimResource(resource.Resource):
         data_files_paths = glob.glob(os.path.join(data_files_dir, "bicing*_UTC.xml"))
 
         self._files = []
-        # take just first file
+        # take all the files
         for data_file_path in data_files_paths:
             with open(data_file_path, 'r') as data_file:
                 self._files.append(data_file.read())

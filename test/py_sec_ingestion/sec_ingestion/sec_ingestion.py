@@ -260,9 +260,27 @@ def heartbeat():
     '''
     _send_email(__file__, _admin_email, "Bicing ingestion heartbeat", body = "I'm still alive!!!")
 
+def download_n_files(target_dir, num_files=None):
+    def report_progress(bytes_transmitted, bytes_total):
+        _logger.info(str(bytes_transmitted) + " / " + str(bytes_total) + " bytes transmitted from S3")
+
+    if num_files != None:
+        keys =_s3_bucket.get_all_keys(prefix = _trg_s3_key_prefix, max_keys = num_files)
+    else:
+        keys =_s3_bucket.get_all_keys(prefix = _trg_s3_key_prefix)
+    n_keys = len(keys)
+    _logger.info("Found " + str(n_keys) + " keys")    
+    _logger.info("Downloading " + str(n_keys)+ " into " + target_dir)
+    for key in keys:
+        _logger.info("Downloading S3 key " + key.name)
+        trg_path = os.path.join(target_dir, os.path.basename(key.name))
+        with open(trg_path, 'w') as out_f:
+            key.get_file(out_f, cb=report_progress)
+
 if __name__ == '__main__':
+    # (py27env)[cloudera@localhost sec_ingestion]$ python sec_ingestion.py download /tmp/kkbicing 200
     if len(sys.argv) < 2:
-        print 'Usage:', sys.argv[0], '[estimate_refresh | ingest | report_errors | heartbeat]'
+        print 'Usage:', sys.argv[0], '[estimate_refresh | ingest | report_errors | heartbeat | download]', '<target_dir full path>'
         sys.exit(1)
 
     action = sys.argv[1]
@@ -274,3 +292,11 @@ if __name__ == '__main__':
         report_errors()
     elif action == 'heartbeat':
         heartbeat()
+    elif action == 'download':
+        target_dir = sys.argv[2]
+        num_files = int(sys.argv[3])
+        download_n_files(target_dir, num_files)
+
+        
+
+
