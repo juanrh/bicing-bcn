@@ -68,7 +68,7 @@ public class AvroWriterBoltTest {
 	@Test
 	public void createMonthTest() throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException  {
 		// http://stackoverflow.com/questions/34571/whats-the-proper-way-to-test-a-class-with-private-methods-using-junit
-		long timestamp = 1403452626L;
+		long timestamp = 1403452626L * 1000L;
 		Method timestampToMonth = avroWriterBolt.getClass().getDeclaredMethod("timestampToMonth", long.class);
 		timestampToMonth.setAccessible(true);
 		Assert.assertEquals("2014-06-22", timestampToMonth.invoke(avroWriterBolt, timestamp));

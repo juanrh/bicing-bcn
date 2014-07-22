@@ -215,9 +215,8 @@ public class AvroWriterBolt extends BaseRichBolt {
 	}
 	
 	private String timestampToMonth(long timestamp) {
-		// convert from the seconds returned by a TimestampParser
-		// to the milliseconds accepted by Date
-		return MONTH_FORMATTER.format(new Date(timestamp * 1000));
+		// in milliseconds
+		return MONTH_FORMATTER.format(new Date(timestamp));
 	}
 
 	@Override

@@ -150,6 +150,9 @@ public class BicingStationDao implements Serializable {
 	/**
 	 * - If streetNumber is absent (i.e. tag <streetNumber></streetNumber>) then -1 is used for this field
 	 * - If height is absent then 0 is used as default
+	 * 
+	 * NOTE: we are parsing the bicing XML as-is, therefore the updatetime must be converted from
+	 * seconds to milliseconds here, not only in the Storm parser
 	 * */
 	public Iterable<Value> parse(String bicingFileContents) {
 		// Load bicing XML string
@@ -161,7 +164,7 @@ public class BicingStationDao implements Serializable {
 			// move to first result
 		updatetimeResults.next();
 		Row updatetimeRow = updatetimeResults.getRow();
-		final long updateTime = Long.parseLong(updatetimeRow.getValue(this.updatetimeColumn).toString());
+		final long updateTime = Long.parseLong(updatetimeRow.getValue(this.updatetimeColumn).toString()) * 1000L;
 		updatetimeResults.close();
 
 		// get data for each station, add the update time, and construct the corresponding values

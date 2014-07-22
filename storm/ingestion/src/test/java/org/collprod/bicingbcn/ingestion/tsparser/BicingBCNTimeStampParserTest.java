@@ -55,7 +55,7 @@ public class BicingBCNTimeStampParserTest {
 		String okFileContents = loadTestFile(this.getClass().getResource(TEST_FILENAME_SUCCESS_1).getFile());
 		Optional<Long> timestamp = parser.apply(okFileContents);
 		Assert.assertTrue(timestamp.isPresent());
-		Assert.assertEquals(new Long(1401551587), timestamp.get());
+		Assert.assertEquals(new Long(1401551587L * 1000L) , timestamp.get());
 	}
 	
 	@Test

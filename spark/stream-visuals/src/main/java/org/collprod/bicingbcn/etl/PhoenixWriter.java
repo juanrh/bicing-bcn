@@ -419,7 +419,8 @@ public class PhoenixWriter implements Serializable {
 		stmtBicingBigTable.setInt(1, stationInfo.id());
 		
 		// 2.  TIMETAG TIMESTAMP NOT NULL,
-		stmtBicingBigTable.setTimestamp(2, new Timestamp(stationInfo.updatetime() * 1000)); // TODO ensure correct translation to milliseconds
+			// in milliseconds 
+		stmtBicingBigTable.setTimestamp(2, new Timestamp(stationInfo.updatetime())); 
 		
 		// -- Degenerate dimension: 'OPN' (open) or 'CLS' (closed)
 		// 3.	    F.STATUS VARCHAR(3),
@@ -556,7 +557,8 @@ public class PhoenixWriter implements Serializable {
 		}
 						
 		//	    -- Time dimension fields
-		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime() * 1000));
+			// in milliseconds 
+		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime()));
 		// Joda time doesn't support week of month
 		SimpleDateFormat weekOfMonthFormat = new SimpleDateFormat("W");
 		
@@ -668,7 +670,8 @@ public class PhoenixWriter implements Serializable {
 		// STATION
 		stmtBicingFact.setInt(1, stationInfo.id());
 		// TIMETAG
-		stmtBicingFact.setTimestamp(2, new Timestamp(stationInfo.updatetime() * 1000)); // TODO ensure correct translation to milliseconds
+			// in milliseconds 
+		stmtBicingFact.setTimestamp(2, new Timestamp(stationInfo.updatetime()));
 		// F.STATUS
 		stmtBicingFact.setString(3,  stationInfo.status());
 		// F.SLOTS
@@ -781,12 +784,14 @@ public class PhoenixWriter implements Serializable {
 	}
 	
 	public void loadBicingDimTimeStatement(BicingStationDao.Value stationInfo, PreparedStatement stmtBicingDimTime) throws SQLException {
-		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime() * 1000));
+			// in milliseconds 
+		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime()));
 		// Joda time doesn't support week of month
 		SimpleDateFormat weekOfMonthFormat = new SimpleDateFormat("W");
 
 		// 1.	    TIMETAG TIMESTAMP NOT NULL,
-		stmtBicingDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime() * 1000));
+			// in milliseconds 
+		stmtBicingDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime()));
 		// -- small values, all in the same column
 		// -- 0 to 59
 		// 2.	    D.MINUTE UNSIGNED_TINYINT,
@@ -839,7 +844,8 @@ public class PhoenixWriter implements Serializable {
 	 * otherwise returns false
 	 * */
 	public boolean checkExistsTimetagDimTime(BicingStationDao.Value stationInfo, PreparedStatement stmtCheckExistsTimetagDimTime) throws SQLException {
-		stmtCheckExistsTimetagDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime() * 1000));
+			// in milliseconds 
+		stmtCheckExistsTimetagDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime()));
 		ResultSet queryResults = stmtCheckExistsTimetagDimTime.executeQuery();
 		return queryResults.next();
 	}

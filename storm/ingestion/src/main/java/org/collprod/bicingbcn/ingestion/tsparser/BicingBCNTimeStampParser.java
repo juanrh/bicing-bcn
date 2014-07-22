@@ -25,7 +25,8 @@ public class BicingBCNTimeStampParser implements TimeStampParser {
 		String exceptionMsg = "";
 		if (matcher.find()) {
 			try {
-				return Optional.of(Long.parseLong(matcher.group(1)));
+				// convert to milliseconds
+				return Optional.of(Long.parseLong(matcher.group(1)) * 1000);
 			} catch (IllegalStateException ise) {
 				exceptionMsg = ise.getMessage();
 			} catch (IndexOutOfBoundsException iobe) {

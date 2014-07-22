@@ -28,7 +28,7 @@ public class EtlStreamTest {
 	
 	@Before
 	public void setup() {
-		stationInfo = BicingStationDao.Value.create(1400940246, 1, 41.3979520, 2.18004200, "Gran Via Corts Catalanes", 21,
+		stationInfo = BicingStationDao.Value.create(1400940246L * 1000L, 1, 41.3979520, 2.18004200, "Gran Via Corts Catalanes", 21,
 				760, Lists.newArrayList(24,369,387,426), "OPN", 13, 9);
 		phoenixWriter = new PhoenixWriter();
 	}
@@ -76,7 +76,8 @@ public class EtlStreamTest {
 		Class.forName(JDBC_DRIVER);
 		con = DriverManager.getConnection(DB_URL);
 		PreparedStatement stmtCheckExistsTimetagDimTime = con.prepareStatement("SELECT TIMETAG from BICING_DIM_TIME WHERE TIMETAG = ?");
-		stmtCheckExistsTimetagDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime() * 1000));
+			// in milliseconds 
+		stmtCheckExistsTimetagDimTime.setTimestamp(1, new Timestamp(stationInfo.updatetime()));
 		ResultSet queryResults = stmtCheckExistsTimetagDimTime.executeQuery();
 		boolean exists =  queryResults.next();
 		Assert.assertTrue(exists);
