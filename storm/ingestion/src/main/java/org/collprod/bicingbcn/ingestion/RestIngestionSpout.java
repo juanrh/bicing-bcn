@@ -67,6 +67,7 @@ public class RestIngestionSpout extends BaseRichSpout {
 	
 	public static final String CONTENT_FIELD = "CONTENT_FIELD";  
 	public static final String TIMESTAMP_FIELD = "TIMESTAMP_FIELD";
+	public static final String KEY_FIELD = "KEY_FIELD";
 	public static final String DATASOURCE_ID = "DATASOURCE_ID"; 
 
 	
@@ -392,14 +393,15 @@ public class RestIngestionSpout extends BaseRichSpout {
 					// Emit tuple only if it's new: if it has a new timestamp
 					TimeStampParser timestampParser = getParser(datasourceState);
 					Optional<Long> newTimestamp = timestampParser.apply(newData);
-					if (newTimestamp.isPresent()) {
+					Optional<String> newKey = timestampParser.getKey(newData);
+					if (newTimestamp.isPresent() && newKey.isPresent()) {
 						// only emit the tuple if we obtain a new timestamp, so the data is new 
 						MutableLong lastTimestamp = datasourceState.lastTimestamp();
 						Long newTimestampValue = newTimestamp.get();
 						if (newTimestampValue > lastTimestamp.longValue()) {
 							// emit
 							UUID tupleId = UUID.randomUUID();
-							Values tuple = new Values(datasourceState.datasourceId(), newTimestampValue, newData);
+							Values tuple = new Values(datasourceState.datasourceId(), newTimestampValue, newKey.get(), newData);
 								// store is Redis
 							storeInRedis(tuple, tupleId);
 								// emit a tuple with an id
@@ -411,7 +413,12 @@ public class RestIngestionSpout extends BaseRichSpout {
 						}
 					}
 					else {
-						LOGGER.warn("Could not parse timestamp for data source " + datasourceState.datasourceId());
+						if (! newTimestamp.isPresent()) {
+							LOGGER.warn("Could not parse timestamp for data source " + datasourceState.datasourceId());
+						}
+						if (! newKey.isPresent()) {
+							LOGGER.warn("Could not get key for data source " + datasourceState.datasourceId());
+						}
 					}
 				}
 				datasourceState.stopwatch().start();
@@ -443,7 +450,7 @@ public class RestIngestionSpout extends BaseRichSpout {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields(DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD));
+		declarer.declare(new Fields(DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD));
 	}
 
 }

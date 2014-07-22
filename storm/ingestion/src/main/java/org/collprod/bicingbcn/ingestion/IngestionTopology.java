@@ -161,7 +161,6 @@ public class IngestionTopology {
 		Config conf = loadConfiguration();
 		
 		// Clear Redis
-		// TODO: this is mostly for testing, but maybe should be permanent, think about it
 		RestIngestionSpout.clearDb(conf);
 		
 		// Build topology
@@ -169,8 +168,6 @@ public class IngestionTopology {
 		@SuppressWarnings("rawtypes")
 		int numDatasources = ((Map) conf.get(IngestionTopology.DATASOURCE_CONF_KEY)).size();
 		LOGGER.info("Found {} different datasources", numDatasources);
-			// TODO: use a sensible value
-		conf.put(Config.TOPOLOGY_WORKERS, 1);
 		TopologyBuilder topologyBuilder = new TopologyBuilder();
 		// Create a Spout instance / task per data source, to handle only that connection
 		topologyBuilder.setSpout(RestIngestionSpout.class.getName(), new RestIngestionSpout(), 
@@ -187,9 +184,8 @@ public class IngestionTopology {
 		 * if two bolts connect to the same table, by using fieldsGrouping we avoid that all the bolts
 		 * connect to all the tables, so each bolt specializes in a set of datasources and tables
 		 * */
-		// FIXME: this bolt works correclty, but its disabled for testing to avoid saturation of the VM 
-		/*
-		topologyBuilder.setBolt(HBaseWriterBolt.class.getName(), new HBaseWriterBolt(),
+		// FIXME: this bolt works correctly, but its disabled for testing to avoid saturation of the VM 
+		/* topologyBuilder.setBolt(HBaseWriterBolt.class.getName(), new HBaseWriterBolt(),
 								numDatasources).fieldsGrouping(RestIngestionSpout.class.getName(), 
 													new Fields(RestIngestionSpout.DATASOURCE_ID));
 		*/
@@ -198,7 +194,6 @@ public class IngestionTopology {
 		LOGGER.info("Launching topology");
 		if(! conf.get(Config.TOPOLOGY_NAME).equals(LOCAL_TOPOLOGY_NAME)) {
 			// run in distributed mode
-				// FIXME, but at least as many workers as data sources
 			conf.setNumWorkers(numDatasources * 2); 
 			try {
 				StormSubmitter.submitTopology(conf.get(Config.TOPOLOGY_NAME).toString(), conf, topologyBuilder.createTopology());

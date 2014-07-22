@@ -1,5 +1,6 @@
 package org.collprod.bicingbcn.ingestion.tsparser;
 
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +39,8 @@ public class BicingBCNTimeStampParser implements TimeStampParser {
 		// No match
 		return Optional.absent();
 	}
-	
-
+	@Override
+	public Optional<String> getKey(String data) {
+		return Optional.of(UUID.randomUUID().toString());
+	}
 }

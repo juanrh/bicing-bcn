@@ -24,7 +24,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 /**
- * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD) which are sent to Kafka:
+ * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to Kafka:
  * - using the  DATASOURCE_ID as Kafka topic
  * - using DATASOURCE_ID + TIMESTAMP_FIELD as Kafka partition key
  * - the message is the CONTENT_FIELD
@@ -108,7 +108,7 @@ public class KafkaWriterBolt extends BaseRichBolt {
 	@Override
 	public void execute(Tuple inputTuple) {
 		/* Processing tuples of the shape
-		   (DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD) */
+		   (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) */
 		// get data
 		String datasource = inputTuple.getStringByField(RestIngestionSpout.DATASOURCE_ID);
 		Long timestamp = inputTuple.getLongByField(RestIngestionSpout.TIMESTAMP_FIELD);

@@ -34,9 +34,13 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
 /**
- * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, CONTENT_FIELD) which are sent to HBase
+ * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to HBase
  * into a table named 'DATASOURCE_ID' using 'TIMESTAMP_FIELD' as row key, into the 
- * column "data:text" with 'CONTENT_FIELD' as the value, and with a single version cell
+ * column "data:<KEY_FIELD>" with 'CONTENT_FIELD' as the value, and with a single version cell
+ * 
+ * TODO: this key schema generates RegionServer hot spotting on inserts, as it grows 
+ * monotonically. Implement some salting mechanism like this http://blog.sematext.com/2012/04/09/hbasewd-avoid-regionserver-hotspotting-despite-writing-records-with-sequential-keys/ 
+ * or the one in Phoenix to avoid this 
  */
 public class HBaseWriterBolt extends BaseRichBolt {
 
@@ -45,7 +49,6 @@ public class HBaseWriterBolt extends BaseRichBolt {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(IngestionTopology.class);
 	private final static String DATA_COLUMN_FAMILY = "data";
-	private final static String DATA_QUAL = "text";
 	private static final int CACHE_EXPIRATION_TIME = 10;
 
 	/**
@@ -129,6 +132,7 @@ public class HBaseWriterBolt extends BaseRichBolt {
 		// it will just overwrite itself
 		String datasource = inputTuple.getStringByField(RestIngestionSpout.DATASOURCE_ID);
 		Long timestamp = inputTuple.getLongByField(RestIngestionSpout.TIMESTAMP_FIELD);
+		String key = inputTuple.getStringByField(RestIngestionSpout.KEY_FIELD);
 		String content = inputTuple.getStringByField(RestIngestionSpout.CONTENT_FIELD);
 		
 		// create a new Put to insert into HBase into a table named 'DATASOURCE_ID' 
@@ -138,7 +142,7 @@ public class HBaseWriterBolt extends BaseRichBolt {
 		try {
 			targetTable = this.tableConnectionsCache.get(datasource);
 			Put put = new Put(Bytes.toBytes(timestamp));
-			put.add(Bytes.toBytes(DATA_COLUMN_FAMILY), Bytes.toBytes(DATA_QUAL), Bytes.toBytes(content));
+			put.add(Bytes.toBytes(DATA_COLUMN_FAMILY), Bytes.toBytes(key), Bytes.toBytes(content));
 			targetTable.put(put);
 		} catch (ExecutionException ee) {
 			LOGGER.error("Error inserting value for datasource {}: {}", datasource, ExceptionUtils.getStackTrace(ee));
