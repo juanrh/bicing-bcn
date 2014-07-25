@@ -260,15 +260,19 @@ public class EtlStream {
 					
 					stmtGetStationInfo = phoenixWriter.getValue().buildLookupStationStatement(dbConnection);
 					stmtUpsertBicingBigTableStatement  = phoenixWriter.getValue().buildBicingBigTableStatement(dbConnection);
+					boolean upsertOk; 
 								
 					for (BicingStationDao.Value stationInfo : stationsInfoByUpdateTime) {
 						// generate and execute an upsert for BICING
 						LOGGER.info("Updating table BICING");
-						phoenixWriter.getValue().loadBicingBigTableStatement(stationInfo, lastBikeCount, stmtUpsertBicingBigTableStatement, stmtGetStationInfo);
-						stmtUpsertBicingBigTableStatement.executeUpdate();
+						
+						upsertOk = phoenixWriter.getValue().loadBicingBigTableStatement(stationInfo, lastBikeCount, stmtUpsertBicingBigTableStatement, stmtGetStationInfo);
+						if (upsertOk) {
+							stmtUpsertBicingBigTableStatement.executeUpdate();
 												
-						// Commit update to database 
-						dbConnection.commit();
+							// Commit update to database 
+							dbConnection.commit();
+						}
 						
 						// update state
 						lastBikeCount = stationInfo.bikes();

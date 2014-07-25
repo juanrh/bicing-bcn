@@ -23,6 +23,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 
 /**
  * Quick and dirty pseudo DAO for bicing data, lots of things can be improved, but the idea is:  
@@ -147,6 +148,10 @@ public class BicingStationDao implements Serializable {
 		return this.updatetimeCompiledQuery;
 	}
 	
+	private static Integer safeNullableIntParse(Object value, Integer defaultValue) {
+		return Optional.fromNullable(Ints.tryParse(Optional.fromNullable(value).or(defaultValue.toString()).toString())).or(defaultValue);				 
+	}
+	
 	/**
 	 * - If streetNumber is absent (i.e. tag <streetNumber></streetNumber>) then -1 is used for this field
 	 * - If height is absent then 0 is used as default
@@ -176,26 +181,25 @@ public class BicingStationDao implements Serializable {
 					@Nullable
 					public Value apply(@Nullable Row stationsRow) {
 						return Value.create(updateTime, 
+								// We need the station id, cannot use a default value so a parse error here has possible no recovery
 								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.idColumn).toString()),
 								Double.parseDouble(stationsRow.getValue(BicingStationDao.this.latColumn).toString()), 
 								Double.parseDouble(stationsRow.getValue(BicingStationDao.this.longColumn).toString()),
 								stationsRow.getValue(BicingStationDao.this.streetColumn).toString(),
-								Integer.parseInt(Optional.fromNullable(stationsRow.getValue(BicingStationDao.this.heightColumn))
-										 .or("0").toString()),
-								Integer.parseInt(Optional.fromNullable(stationsRow.getValue(BicingStationDao.this.streetNumberColumn))
-														 .or("-1").toString()),
+								safeNullableIntParse(stationsRow.getValue(BicingStationDao.this.heightColumn), 0),							
+								safeNullableIntParse(stationsRow.getValue(BicingStationDao.this.streetNumberColumn), -1),
 								Lists.newArrayList(Iterables.transform(
 										Splitter.on(",").split(stationsRow.getValue(BicingStationDao.this.nearbyStationListColumn).toString()), 
 										new Function<String, Integer>() {
 											@Override
 											@Nullable
 											public Integer apply(@Nullable String intStr) {
-												return Integer.parseInt(intStr);
+												return safeNullableIntParse(intStr, -1);
 											}
 								})),
 								stationsRow.getValue(BicingStationDao.this.statusColumn).toString(),
-								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.slotsColumn).toString()),
-								Integer.parseInt(stationsRow.getValue(BicingStationDao.this.bikesColumn).toString())
+								safeNullableIntParse(stationsRow.getValue(BicingStationDao.this.slotsColumn), 0),	
+								safeNullableIntParse(stationsRow.getValue(BicingStationDao.this.bikesColumn), 0)
 								);
 					}});
 		// note stationsResult is not closed		
