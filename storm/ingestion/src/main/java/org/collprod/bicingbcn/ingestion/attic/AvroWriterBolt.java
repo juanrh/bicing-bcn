@@ -43,8 +43,10 @@ import com.google.common.cache.RemovalNotification;
  * Data is serialized in Avro with an Avro file per month, hence it is stored in the path
  * <data source HDFS path>/<month>.avro as a new Avro record with the name AvroWriterBolt.AVRO_RECORD_NAME, 
  * and with the fields:
- * - AVRO_TIMESTAMP_FIELD :: long
- * - AVRO_CONTENT_FIELD :: string
+ * <ul>
+ *  <li> AVRO_TIMESTAMP_FIELD :: long </li>
+ *  <li> AVRO_CONTENT_FIELD :: string </li>
+ * </ul>
  * 
  * No additional timestamp check is performed, this bolt asssumes that all the data is new
  * */

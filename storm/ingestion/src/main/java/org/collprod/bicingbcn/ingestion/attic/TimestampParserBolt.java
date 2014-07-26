@@ -25,13 +25,15 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 
 /**
- * Parses the timestamp of the data and drops that data which was already downloaded, i.e., 
+ * <p>Parses the timestamp of the data and drops that data which was already downloaded, i.e., 
  * which has a timestamp less or equal to the last timestamp
- * 
+ * </p>
+ * <p>
  * In case of failure is not a big loss to lose this timestamp, as that would just imply
  * that a single file would be emitted twice: altough this could be a problem for the 
  * next bolts depending on their behaviour. Hence the timestamp is also emitted 
- * in case the next bolts also want to control the timestamp 
+ * in case the next bolts also want to control the timestamp
+ * </p> 
  * */
 public class TimestampParserBolt extends BaseRichBolt {
 

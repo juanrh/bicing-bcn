@@ -24,13 +24,20 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 /**
- * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to Kafka:
- * - using the  DATASOURCE_ID as Kafka topic
- * - using DATASOURCE_ID + TIMESTAMP_FIELD as Kafka partition key
- * - the message is the CONTENT_FIELD
+ * <p>Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to Kafka:
+ * <ul>
+ * 	<li>using the  DATASOURCE_ID as Kafka topic</li>
+ *  <li>using DATASOURCE_ID + TIMESTAMP_FIELD as Kafka partition key</li>
+ * 	<li>the message is the CONTENT_FIELD</li>
+ * </ul>
+ * </p>
  * 
- * Check with 
- [cloudera@localhost kafka_2.10-0.8.1.1]$ bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test_bicing_station_data
+ * <p>
+ * Check with </br>
+ * <code> 
+ * [cloudera@localhost kafka_2.10-0.8.1.1]$ bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test_bicing_station_data
+ * </code>
+ * </p>
  * */
 
 public class KafkaWriterBolt extends BaseRichBolt {

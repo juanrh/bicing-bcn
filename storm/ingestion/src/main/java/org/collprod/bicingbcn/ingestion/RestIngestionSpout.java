@@ -33,35 +33,44 @@ import com.google.common.base.Stopwatch;
 import com.google.common.math.LongMath;
 
 /**
- * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
- * 
+ * <p>
  * Emits tuples of the following shape:
- *  - DATASOURCE_ID :: String
- *  - TIMESTAMP_FIELD :: Long
- *  - CONTENT_FIELD :: String
- *  
+ * <ul>
+ *  <li> DATASOURCE_ID :: String</li>
+ *  <li> TIMESTAMP_FIELD :: Long</li>
+ *  <li> CONTENT_FIELD :: String</li>
+ *  </ul>
+ * </p>
+ * 
+ * <p>
  * This spouts parses the timestamp of the data and drops that data which was already downloaded, i.e., 
  * which has a timestamp less or equal to the last timestamp. This parsing is not performed in a 
  * separate bolt because we cannot guarantee that the order of emision of tuples is preserved,
  * and we don't want a delayed tuple to be rejected because it arrived to a timestamp control bolt
  * after a tuple which was emited later 
- * 
+ * </p>
+ * <p>
  * The mutable state for this spout is stored as a DatasourceState object per data source
  * assigned to this spout. The only mutable state per data source is a Stopwatch object, a 
  * TimestampParser and the last timestamp.
  * That mutable state could be persisted in some data store, but that is not needed because 
  * if the state is lost and the spout restarted that only affects the first call to nextTuple(), 
  * which maybe would download a file twice, but then the later calls would be ok
- * 
+ * </p>
+ * <p>
  * Guaranteed processing strategy:
- * - each file is stored in Redis as a String when download from the consumed service. Default Redis RDB
+ * 	<ul>
+ * 	<li> each file is stored in Redis as a String when download from the consumed service. Default Redis RDB
  * persistance and the capacity of up to 512 MB per Redis string (http://redis.io/topics/data-types) 
  * should be enough: if the service generates files bigger than that then this approach is not sound 
  * (another database and several instances of this spout taking turns to consume the service, and also
- * local grouping for connecting components, could be an option)
- * - a fresh UUID is used for each file to generate a fresh Redis key
- * - in case of processing failure (e.g. in the Spout that stores the file) the tuple is emitted again; 
- * in case of ack its key is deleted  
+ * local grouping for connecting components, could be an option)</li>
+ *  <li> a fresh UUID is used for each file to generate a fresh Redis key </li>
+ *  <li>in case of processing failure (e.g. in the Spout that stores the file) the tuple is emitted again; 
+ * in case of ack its key is deleted </li>
+ * </ul>
+ * </p>
+ * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
  * */
 public class RestIngestionSpout extends BaseRichSpout {
 	

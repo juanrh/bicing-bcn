@@ -27,18 +27,22 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
 /**
- * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
+ * <p>This is the main program for the ingestion system.   
  * 
- * Run in distributed mode by setting "ingestion.properties:topology.name" to a
+ * <p>Run in distributed mode by setting "ingestion.properties:topology.name" to a
  * not empty value and executing the following command. When "topology.name" is 
  * empty that commands runs in local mode but using storm's libraries, which is 
  * also different to an eclipse local run
+ *  </p>
  * 
- * NOTE: in distributed mode properties are taken from the jar, so a "mvn clean package" is 
- * required to refresh the properties before a new execution 
+ * <p>NOTE: in distributed mode properties are taken from the jar, so a "mvn clean package" is 
+ * required to refresh the properties before a new execution <br>
  * 
+ * <code>
  * [cloudera@localhost ingestion]$ storm jar target/storm-ingestion-0.0.1-SNAPSHOT.jar org.collprod.bicingbcn.ingestion.IngestionTopology
- * 
+ * </code>
+ *  </p>
+ * @author Juan Rodriguez Hortala <juan.rodriguez.hortala@gmail.com>
  * */
 public class IngestionTopology {
 	// For running using ${workspace_loc:storm-ingestion/src/main/resources} as working directory
@@ -104,6 +108,12 @@ public class IngestionTopology {
 		return deserializedConfigs;
 	}
 	
+	
+	/**
+	 * Load configuration from the default path
+	 * 
+	 * @return a Config object with the loaded configuration
+	 * */
 	public static Config loadConfiguration() {
 		PropertiesConfiguration ingestionConfig  = null;
 		Map<String, String> datasourcesConfigurations = null;

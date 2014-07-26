@@ -34,13 +34,15 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
 /**
- * Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to HBase
+ * <p>Accepts tuples (DATASOURCE_ID, TIMESTAMP_FIELD, KEY_FIELD, CONTENT_FIELD) which are sent to HBase
  * into a table named 'DATASOURCE_ID' using 'TIMESTAMP_FIELD' as row key, into the 
  * column "data:<KEY_FIELD>" with 'CONTENT_FIELD' as the value, and with a single version cell
+ *  </p>
  * 
- * TODO: this key schema generates RegionServer hot spotting on inserts, as it grows 
+ * <p>TODO: this key schema generates RegionServer hot spotting on inserts, as it grows 
  * monotonically. Implement some salting mechanism like this http://blog.sematext.com/2012/04/09/hbasewd-avoid-regionserver-hotspotting-despite-writing-records-with-sequential-keys/ 
- * or the one in Phoenix to avoid this 
+ * or the one in Phoenix to avoid this
+ *  </p> 
  */
 public class HBaseWriterBolt extends BaseRichBolt {
 
@@ -69,7 +71,7 @@ public class HBaseWriterBolt extends BaseRichBolt {
 	/**
 	 * Ensures a table is created
 	 * 
-	 * @param hbaseConfigFile local full path to hbase-site.xml
+	 * @param hBaseAdmin handler to HBase administration
 	 * @param outputHBaseTable name of the table 
 	 * @throws ZooKeeperConnectionException 
 	 * @throws MasterNotRunningException 
