@@ -39,14 +39,17 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
 /**
- * Run to YARN with (start YARN from Cloudera Manager before) 
  * 
+ * <p>This is the main program for the ETL. <br>
+ * Run to YARN with:<br> 
+ * 
+ *<code>
 [cloudera@localhost spark-1.0.0-bin-cdh4]$ pwd
 /home/cloudera/Sistemas/Spark/spark-1.0.0-bin-cdh4
 [cloudera@localhost spark-1.0.0-bin-cdh4]$ ./bin/spark-submit --class org.collprod.bicingbcn.etl.EtlStream --master localhost /home/cloudera/git/bicing-bcn/spark/stream-visuals/target/spark-stream-visuals-0.0.1-SNAPSHOT.jar
- * 
+</code>
+ * </p>
  * */
-
 public class EtlStream {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(EtlStream.class);
@@ -303,6 +306,11 @@ public class EtlStream {
 		stateUpdates.print(); // force evaluation, this is essential for this code to have side effects!
 	}
 	
+	/**
+	 * Execute the ETL process
+	 * 
+	 * @param config configuration to use for the ETL
+	 * */
 	public static void run(PropertiesConfiguration config) {
 		// Connect to Spark cluster
 		JavaStreamingContext jssc = new JavaStreamingContext(config.getString("spark.master"), 

@@ -19,6 +19,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 
 /**
+ * Class for preparing the statements to read and write to Phoenix
+ * 
  * JDBI (http://www.jdbi.org/) could have been a good option for this
  * */
 public class PhoenixWriter implements Serializable {
@@ -26,9 +28,9 @@ public class PhoenixWriter implements Serializable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhoenixWriter.class);
 	
 	/**
-	 * POJO for a record of the table BICING_DIM_STATION
+	 * POJO for a record of the table BICING_DIM_STATION <br>
 	 * 
-	 * 
+	 * <code>
 		CREATE TABLE IF NOT EXISTS BICING_DIM_STATION (
 		    ID UNSIGNED_LONG NOT NULL,
 		    -- geo info
@@ -47,6 +49,7 @@ public class PhoenixWriter implements Serializable {
 		    -- 
 		    CONSTRAINT PK PRIMARY KEY (ID)
 		);
+		</code>
 	 * */
 	@AutoValue
 	public static abstract class DimStationRecord implements Serializable {
@@ -119,6 +122,9 @@ public class PhoenixWriter implements Serializable {
 	}
 	
 	/**
+	 * Uses con to build a PreparedStatement object that can be used to lookup an station record 
+	 * in the table BICING_DIM_STATION
+	 * 
 	 * Is not responsible from closing con
 	 * */
 	public PreparedStatement buildLookupStationStatement(Connection con) throws SQLException {
@@ -129,6 +135,9 @@ public class PhoenixWriter implements Serializable {
 	
 	
 	/**
+	 * Uses stmtGetStationInfo to get an station record for the id stationId  
+	 * in the table BICING_DIM_STATION
+	 * 
 	 * Is not responsible from closing stmtGetStationInfo
 	 * */
 	public DimStationRecord lookupStationRecord(PreparedStatement stmtGetStationInfo, Long stationId) throws SQLException {
@@ -229,19 +238,14 @@ public class PhoenixWriter implements Serializable {
 	
 	
 	 /**
+	 * <p>
 	 * Sets the fields of stmtBicingBigTable according to the values of stationInfo and lastBikeCount
-	 * so it can be used to update the table BICING
-	 * 
-	 * @param stmtGetStationInfo is used to query BICING_DIM_STATION for the data for the station in stationInfo. This
-	 * method fills the parameters of stmtGetStationInfo according to stationInfo
-	 * 
-	 * @return true if the statement was correctly filled, otherwise return false if there was some error
-	 * creating the statement (e.g. no record was found for the station id)
-	 * 
+	 * so it can be used to update the table BICING <br>
 	 * This method is not responsible for closing any statement
+	 * </p>
 	 * 
-	 * NOTE: The field slots is not used for computing the number of bikes lent and
-	 
+	 <p>
+	 <code>
 			CREATE TABLE IF NOT EXISTS BICING (
 			    -- Keys
 			    ---
@@ -331,89 +335,16 @@ public class PhoenixWriter implements Serializable {
 			    -- This gives a non monotonically increasing row key
 			    CONSTRAINT PK PRIMARY KEY (STATION, TIMETAG)
 			);
+	);
+	</code>
+	</p>
 
- 
- 		Old Schema: FIXME delete
-			CREATE TABLE IF NOT EXISTS BICING (
-			    -- Keys
-			    ---
-			    -- station to which the data for this row applies
-		1.	    STATION UNSIGNED_LONG NOT NULL,
-			    -- native apache phoenix meaning: The format is yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]
-			    -- Mapped to java.sql.Timestamp with an internal representation 
-			    -- of the number of nanos from the epoch
-		2.	    TIMETAG TIMESTAMP NOT NULL,
-			    --
-			    -- Fact fields
-			    --
-			    -- Degenerate dimension: 'OPN' (open) or 'CLS' (closed)
-		3.	    F.STATUS VARCHAR(3),
-			    -- Number of parking slots available: should be 0 
-			    -- if F.STATUS is "CLS"
-		4.	    F.SLOTS UNSIGNED_LONG,
-			    -- Number of bikes available: should be 0 
-			    -- if F.STATUS is "CLS"
-		5.	    F.AVAILABLE UNSIGNED_LONG,
-			    -- Total capacity of the station as (parking slots
-			    -- + bikes) * (status == OPN)
-		6.	    F.CAPACITY UNSIGNED_LONG,
-			    -- Number of bikes lent for this station since 
-			    -- the previous update
-		7.	    F.LENT UNSIGNED_LONG,
-			    -- Number of bikes returned to this station since 
-			    -- the previous update
-		8.	    F.RETURNED UNSIGNED_LONG,
-			    --
-			    -- Station dimension fields
-			    --
-			    -- geo info
-		9.	    S.LONGITUDE UNSIGNED_DOUBLE,
-		10.	    S.LATITUDE UNSIGNED_DOUBLE,
-		11.	    S.HEIGH UNSIGNED_LONG,
-			    -- human readable location 
-		12.	    S.DISTRICT VARCHAR,
-		13.	    S.NEIGHBORHOOD VARCHAR,
-		14.	    S.POSTAL_CODE VARCHAR,
-		15.	    S.ADDRESS VARCHAR,
-			    -- district info
-		16.	    S.POP_DENSITY UNSIGNED_DOUBLE,
-		17.	    S.POPULATION UNSIGNED_LONG,
-		18.	    S.SIZE UNSIGNED_DOUBLE,
-			    --
-			    -- Time dimension fields
-			    -- small values, all in the same column
-			    -- 0 to 59
-		19.	    T.MINUTE UNSIGNED_TINYINT, 
-			    -- 0 to 23
-		20.	    T.HOUR UNSIGNED_TINYINT, 
-			    -- VALUES: '[04:00 - 08:00)', '[08:00 - 12:00)', 
-			    --         '[12:00 - 16:00)', '[16:00 - 20:00)', 
-			    --         '[20:00 - 00:00)', '[00:00 - 04:00)'
-		21.	    T.DAYSIXTH VARCHAR(15),
-			    -- Day parts: http://en.wikipedia.org/wiki/Rush_hour
-			    -- VALUE: 'GO-WORK' (rush hour going to work: [06:00 - 10:00)), 
-			    -- 'MORNING' ([10:00 - 13:00)), 'LUNCH' (spanish lunch [13:00, 15:00)),
-			    -- 'AFTERNOON' (afternoon, [15:00 - 17:00), 'BACK-HOME' (spanish rush hour for 
-			    -- going back home: [17:00 - 19:00), 'NIGHT' [19:00, 06:00)
-		22.	    T.PART VARCHAR(9),
-			    -- 1 to 30
-		23.	    T.MONTH_DAY UNSIGNED_TINYINT, 
-			    -- 1 to 365
-		24.	    T.YEAR_DAY UNSIGNED_SMALLINT, 
-			    -- 1 to 5
-		25.	    T.MONTH_WEEK UNSIGNED_TINYINT, 
-			    -- 1 to 53
-		26.	    T.YEAR_WEEK UNSIGNED_TINYINT, 
-			    -- 1 to 12
-		27.	    T.MONTH UNSIGNED_TINYINT, 
-			    -- 1 to 4
-		28.	    T.TRIMESTER UNSIGNED_TINYINT, 
-			    -- e.g. 2014
-		29.	    T.YEAR UNSIGNED_SMALLINT
-			
-			    -- This gives a non monotonically increasing row key
-			    CONSTRAINT PK PRIMARY KEY (STATION, TIMETAG)
-);
+     * @param stmtGetStationInfo is used to query BICING_DIM_STATION for the data for the station in stationInfo. This
+	 * method fills the parameters of stmtGetStationInfo according to stationInfo
+	 * 
+	 * @return true if the statement was correctly filled, otherwise return false if there was some error
+	 * creating the statement (e.g. no record was found for the station id)
+	 * 
 	 * */
 	public boolean loadBicingBigTableStatement(BicingStationDao.Value stationInfo, int lastBikeCount, 
 			PreparedStatement stmtBicingBigTable, PreparedStatement stmtGetStationInfo)  {
@@ -797,6 +728,10 @@ public class PhoenixWriter implements Serializable {
 		throw new RuntimeException("Date " + date + "has an hour value outside the interval [0, 23]");
 	}
 	
+	/**
+	 * Sets the fields of stmtBicingDimTime according to the values of stationInfo 
+	 * so it can be used to update the table BICING_DIM_TIME
+	 * */
 	public void loadBicingDimTimeStatement(BicingStationDao.Value stationInfo, PreparedStatement stmtBicingDimTime) throws SQLException {
 			// in milliseconds 
 		DateTime stationTimetagDatetime = new DateTime(new Date(stationInfo.updatetime()));
@@ -848,6 +783,13 @@ public class PhoenixWriter implements Serializable {
 		stmtBicingDimTime.setInt(12, stationTimetagDatetime.getYear());
 	}
 	
+	
+	/**
+	 * Uses con to build a PreparedStatement object that can be used to check whether a particular
+	 * timetag appears in the table BICING_DIM_TIME
+	 * 
+	 * @throws SQLException 
+	 * */
 	public PreparedStatement buildCheckExistsTimetagDimTime(Connection con) throws SQLException {
 		String stmtCheckExistsTimetagDimTimeStr = "SELECT TIMETAG from BICING_DIM_TIME WHERE TIMETAG = ?";
 		return con.prepareStatement(stmtCheckExistsTimetagDimTimeStr);
