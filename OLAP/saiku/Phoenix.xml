@@ -67,6 +67,18 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
       </Hierarchy>
     </Dimension>
 
+     <Dimension name="DistrictDemography">
+      <Hierarchy name="Population" hasAll="true" allMemberName="All Populations">
+        <Level name="PopulationRange" column="POP_RANGE" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+      <Hierarchy name="PopulationDensity" hasAll="true" allMemberName="All Population Densities">
+        <Level name="PopulationDensityRange" column="POP_DENSITY_RANGE" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+      <Hierarchy name="DistricSize" hasAll="true" allMemberName="All Sizes">
+        <Level name="SizeRange" column="SIZE_RANGE" uniqueMembers="true" type="String"/>
+      </Hierarchy>
+    </Dimension>
+
     <!-- http://mondrian.pentaho.com/documentation/schema.php#Multiple_hierarchies -->
     <!-- Not very interesting if a geo hierarchy cannot be stablished
     <Dimension name="Geo">
@@ -152,12 +164,14 @@ The <Dimension> element has a foreignKey attribute, which is the name of a colum
     <Measure name="TotalCapacity" column="CAPACITY" datatype="Numeric" aggregator="sum" formatString="Standard"/>
     <Measure name="TotalBikesLent" column="LENT" datatype="Numeric" aggregator="sum" formatString="Standard"/>
     <Measure name="TotalBikesReturned" column="RETURNED" datatype="Numeric" aggregator="sum" formatString="Standard"/>
+    <Measure name="TotalTraffic" column="TRAFFIC" datatype="Numeric" aggregator="sum" formatString="Standard"/>
 
     <Measure name="AverageBikesAvailable" column="AVAILABLE" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageBikeSlots" column="SLOTS" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageCapacity" column="CAPACITY" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageLent" column="LENT" datatype="Numeric" aggregator="avg" formatString="Standard"/>
     <Measure name="AverageReturned" column="RETURNED" datatype="Numeric" aggregator="avg" formatString="Standard"/>
+    <Measure name="AverageTraffic" column="TRAFFIC" datatype="Numeric" aggregator="avg" formatString="Standard"/>  
 
     <Measure name="TotalStationCount" column="STATION"  aggregator="distinct-count" formatString="Standard"/>
 
